@@ -537,13 +537,11 @@ function setLocationOverride(mode, announce) {
     return;
   }
 
+  applyUnmappedCourse(currentPos);
   if (currentPos) {
     maybeRefreshCourseContext(currentPos).then(() => refreshYardage());
-  } else {
-    applyUnmappedCourse(null);
-    updateHeroForMode();
   }
-  if (announce) speakFeedback("Treating this as a golf course.");
+  if (announce) speakFeedback("Treating this as a golf course. Mark the pin if I don't have a green.");
 }
 
 function speakLocation() {
@@ -569,6 +567,11 @@ async function maybeRefreshCourseContext(pos) {
 
   if (DEMO_MODE === "home" && locationOverride !== "course") {
     applyHomeMode("No golf course around this GPS point.");
+    return;
+  }
+
+  if (DEMO_MODE === "home" && locationOverride === "course") {
+    applyUnmappedCourse(pos);
     return;
   }
 
@@ -645,9 +648,11 @@ function applyHomeMode(detail) {
     recommendedClubObj = null;
     currentStrategy = "";
     document.getElementById("playsLike").innerText = "-- yd";
+    document.getElementById("rawDistance").innerText = "Off course";
     document.getElementById("elevDiff").innerText = "-- yd";
     document.getElementById("windInfo").innerText = "-- mph";
   }
+  if (!voiceEnabled) updateStatus("At home", false);
   updateLocationUI(detail);
   renderHoleStrip();
   updateMarkPinButton();
@@ -673,6 +678,11 @@ function applyUnmappedCourse(pos) {
   updateMarkPinButton();
   updatePinUI();
   updateHeroForMode();
+  if (!targetPin) {
+    const raw = document.getElementById("rawDistance");
+    if (raw) raw.innerText = "No green yet";
+  }
+  if (!voiceEnabled) updateStatus("On course", false);
 }
 
 function applyCourseModel(model, pos) {
