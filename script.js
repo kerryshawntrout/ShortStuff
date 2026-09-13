@@ -38,17 +38,17 @@ const DEMO_POSITIONS = {
 const DEMO_COURSE = {
   name: "Bob O'Connor Golf Course",
   holes: [
-    { hole: 1, par: 4, name: "Fairfield", tee: { lat: 40.438009, lng: -79.934861 }, green: { lat: 40.438469, lng: -79.937753 } },
+    { hole: 1, par: 4, name: "Fairfield", tee: { lat: 40.438009, lng: -79.934861 }, green: { lat: 40.438469, lng: -79.937753 }, hazards: [{ type: "bunker", lat: 40.43842, lng: -79.93755 }] },
     { hole: 2, par: 4, name: "The Moor", tee: { lat: 40.438200, lng: -79.937582 }, green: { lat: 40.437009, lng: -79.934240 } },
     { hole: 3, par: 4, name: "Lowlands", tee: { lat: 40.436723, lng: -79.934063 }, green: { lat: 40.437892, lng: -79.938162 } },
     { hole: 4, par: 4, name: "Greenheath", tee: { lat: 40.437382, lng: -79.937890 }, green: { lat: 40.436464, lng: -79.934201 } },
-    { hole: 5, par: 3, name: "Belle View", tee: { lat: 40.436229, lng: -79.934066 }, green: { lat: 40.435678, lng: -79.935129 } },
+    { hole: 5, par: 3, name: "Belle View", tee: { lat: 40.436229, lng: -79.934066 }, green: { lat: 40.435678, lng: -79.935129 }, hazards: [{ type: "bunker", lat: 40.43580, lng: -79.93485 }] },
     { hole: 6, par: 4, name: "Midlothian", tee: { lat: 40.436241, lng: -79.934780 }, green: { lat: 40.436786, lng: -79.937455 } },
     { hole: 7, par: 3, name: "The Copse", tee: { lat: 40.436681, lng: -79.936571 }, green: { lat: 40.437339, lng: -79.938316 } },
     { hole: 8, par: 4, name: "Midway", tee: { lat: 40.437489, lng: -79.939156 }, green: { lat: 40.439579, lng: -79.939621 } },
-    { hole: 9, par: 4, name: "The Ravine", tee: { lat: 40.439480, lng: -79.939963 }, green: { lat: 40.437309, lng: -79.939544 } },
+    { hole: 9, par: 4, name: "The Ravine", tee: { lat: 40.439480, lng: -79.939963 }, green: { lat: 40.437309, lng: -79.939544 }, hazards: [{ type: "water", lat: 40.43755, lng: -79.93985 }] },
     { hole: 10, par: 4, name: "Westward Ho", tee: { lat: 40.437519, lng: -79.939880 }, green: { lat: 40.438590, lng: -79.942002 } },
-    { hole: 11, par: 4, name: "The Meadow", tee: { lat: 40.438927, lng: -79.942319 }, green: { lat: 40.437106, lng: -79.943515 } },
+    { hole: 11, par: 4, name: "The Meadow", tee: { lat: 40.438927, lng: -79.942319 }, green: { lat: 40.437106, lng: -79.943515 }, hazards: [{ type: "bunker", lat: 40.43725, lng: -79.94330 }] },
     { hole: 12, par: 3, name: "Long Acre", tee: { lat: 40.437017, lng: -79.942996 }, green: { lat: 40.438239, lng: -79.942052 } },
     { hole: 13, par: 4, name: "The Hillside", tee: { lat: 40.437853, lng: -79.942035 }, green: { lat: 40.437119, lng: -79.939772 } },
     { hole: 14, par: 3, name: "The Dell", tee: { lat: 40.437155, lng: -79.939493 }, green: { lat: 40.435674, lng: -79.938935 } },
@@ -86,6 +86,7 @@ let playerProfile = loadJSON("caddie_profile", {
   distanceBias: 0
 });
 if (!playerProfile.name) playerProfile.name = "Kerry";
+if (!Number.isFinite(Number(playerProfile.handicap))) playerProfile.handicap = 14;
 let roundHistory = loadJSON("caddie_rounds", []);
 let savedPin = loadJSON("caddie_pin", null);
 let targetPin = null;
@@ -143,6 +144,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("previewVoiceBtn").addEventListener("click", previewCaddieVoice);
   document.getElementById("playerNameInput").addEventListener("change", onNameInputChange);
   document.getElementById("playerNameInput").addEventListener("blur", onNameInputChange);
+  document.getElementById("handicapInput").addEventListener("change", onHandicapInputChange);
+  document.getElementById("handicapInput").addEventListener("blur", onHandicapInputChange);
 
   initSpeechVoices();
   updateProfileUI();
@@ -300,6 +303,11 @@ function parseVoiceCommand(speech) {
     setGolferName(nameMatch[1], true);
     return;
   }
+  const hcpMatch = speech.match(/handicap(?:\s+of)?\s+(\d{1,2})/) || speech.match(/\bi(?:'m| am) a (\d{1,2})\b/);
+  if (hcpMatch) {
+    setHandicap(Number(hcpMatch[1]), true);
+    return;
+  }
   const holeMatch = speech.match(/\bhole (\d{1,2})\b/);
   if (holeMatch && !includesAny(speech, ["next hole", "finish hole", "skip hole"])) {
     goToHole(Number(holeMatch[1]), true);
@@ -453,13 +461,15 @@ function applyYardage(rawYards, elevAdjustYards, windData) {
   playsLikeDistYards = Math.round(rawYards + elevAdjustYards + windAdjustYards + (playerProfile.distanceBias || 0));
 
   const strategy = runCourseManagementEngine(playsLikeDistYards, rawYards);
-  recommendedClubObj = getBestClub(strategy.targetDistance);
+  recommendedClubObj = getBestClub(strategy.targetDistance, { preferLonger: strategy.preferLonger });
   currentStrategy = strategy.advice;
 
   document.getElementById("playsLike").innerText = `${playsLikeDistYards} yd`;
   document.getElementById("recommendedClub").innerText = recommendedClubObj
     ? `Club: ${recommendedClubObj.name}`
     : "No club data";
+  const planEl = document.getElementById("playPlan");
+  if (planEl) planEl.innerText = strategy.planLabel || playStyleLabel();
   document.getElementById("strategyAdvice").innerText = strategy.advice;
   document.getElementById("elevDiff").innerText = `${elevAdjustYards >= 0 ? "+" : ""}${Math.round(elevAdjustYards)} yd`;
 
@@ -873,9 +883,11 @@ function updateHeroForMode() {
 
   const club = document.getElementById("recommendedClub");
   const advice = document.getElementById("strategyAdvice");
+  const planEl = document.getElementById("playPlan");
   if (!club || !advice) return;
 
   if (targetPin) return;
+  if (planEl) planEl.innerText = playStyleLabel();
 
   if (locationMode === "home") {
     club.innerText = "At home";
@@ -946,6 +958,10 @@ function buildCourseDataQuery(pos, radius) {
   way["golf"="hole"](around:${radius},${pos.lat},${pos.lng});
   nwr["golf"="green"](around:${radius},${pos.lat},${pos.lng});
   node["golf"="pin"](around:${radius},${pos.lat},${pos.lng});
+  nwr["golf"="bunker"](around:${radius},${pos.lat},${pos.lng});
+  nwr["golf"="water_hazard"](around:${radius},${pos.lat},${pos.lng});
+  nwr["golf"="lateral_water_hazard"](around:${radius},${pos.lat},${pos.lng});
+  way["natural"="water"](around:${radius},${pos.lat},${pos.lng});
 );
 out tags center geom;`;
 }
@@ -1006,6 +1022,7 @@ function buildCourseModel(elements, pos) {
   const holeMap = new Map();
   const pins = [];
   const greens = [];
+  const rawHazards = [];
 
   for (const el of elements || []) {
     const tags = el.tags || {};
@@ -1033,7 +1050,9 @@ function buildCourseModel(elements, pos) {
         tee: teePt,
         green: greenPt,
         pin: null,
-        center
+        center,
+        dogleg: inferDogleg(geom),
+        hazards: []
       });
     }
     if (tags.golf === "pin" && center) {
@@ -1041,6 +1060,13 @@ function buildCourseModel(elements, pos) {
     }
     if (tags.golf === "green" && center) {
       greens.push({ ref: parseHoleRef(tags.ref), lat: center.lat, lng: center.lng });
+    }
+    if (center && (tags.golf === "bunker" || tags.golf === "water_hazard" || tags.golf === "lateral_water_hazard" || tags.natural === "water")) {
+      rawHazards.push({
+        type: tags.golf === "bunker" ? "bunker" : "water",
+        lat: center.lat,
+        lng: center.lng
+      });
     }
   }
 
@@ -1067,6 +1093,20 @@ function buildCourseModel(elements, pos) {
       const hole = holeMap.get(green.ref);
       if (!hole.green) hole.green = { lat: green.lat, lng: green.lng };
     }
+  }
+
+  for (const haz of rawHazards) {
+    let best = null;
+    let bestYd = 75;
+    for (const hole of holeMap.values()) {
+      if (!hole.tee || !hole.green) continue;
+      const yards = distanceToSegmentYards(haz, hole.tee, hole.green);
+      if (yards < bestYd) {
+        bestYd = yards;
+        best = hole;
+      }
+    }
+    if (best) best.hazards.push(haz);
   }
 
   const holes = [...holeMap.values()].sort((a, b) => a.hole - b.hole);
@@ -1106,23 +1146,199 @@ document.addEventListener("visibilitychange", async () => {
 // ==========================================
 // 6. STRATEGY & SHOT LOGGING
 // ==========================================
-function runCourseManagementEngine(playsLikeYards, rawYards) {
+function inferDogleg(geom) {
+  if (!Array.isArray(geom) || geom.length < 3) return null;
+  const start = { lat: geom[0].lat, lng: geom[0].lon };
+  const mid = { lat: geom[1].lat, lng: geom[1].lon };
+  const end = { lat: geom[geom.length - 1].lat, lng: geom[geom.length - 1].lon };
+  const startH = calculateHeading(start, mid);
+  const endH = calculateHeading(mid, end);
+  const delta = ((endH - startH + 540) % 360) - 180;
+  if (Math.abs(delta) < 25) return null;
+  return delta < 0 ? "left" : "right";
+}
+
+function distanceToSegmentYards(point, a, b) {
+  const latScale = 111320;
+  const lngScale = 111320 * Math.cos((a.lat * Math.PI) / 180);
+  const bx = (b.lng - a.lng) * lngScale;
+  const by = (b.lat - a.lat) * latScale;
+  const px = (point.lng - a.lng) * lngScale;
+  const py = (point.lat - a.lat) * latScale;
+  const len2 = bx * bx + by * by;
+  let t = len2 ? (px * bx + py * by) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const dx = px - t * bx;
+  const dy = py - t * by;
+  return Math.sqrt(dx * dx + dy * dy) * 1.09361;
+}
+
+function classifyHazard(hole, hazard) {
+  const tee = hole.tee || hole.center;
+  const green = hole.green;
+  if (!tee || !green) return { ...hazard, zone: "fairway", side: "center", yardsFromTee: Infinity, yardsFromGreen: Infinity };
+  const yardsFromTee = calculateHaversineDistanceYards(tee, hazard);
+  const yardsFromGreen = calculateHaversineDistanceYards(green, hazard);
+  const holeLen = calculateHaversineDistanceYards(tee, green);
+  let zone = "fairway";
+  if (yardsFromTee < 80) zone = "tee";
+  else if (yardsFromGreen < 50) zone = "green";
+  else if (yardsFromTee > holeLen * 0.65) zone = "approach";
+
+  const holeHeading = calculateHeading(tee, green);
+  const hazHeading = calculateHeading(tee, hazard);
+  const delta = ((hazHeading - holeHeading + 540) % 360) - 180;
+  const side = Math.abs(delta) < 10 ? "center" : (delta < 0 ? "left" : "right");
+  return { ...hazard, zone, side, yardsFromTee, yardsFromGreen };
+}
+
+function playerHandicap() {
+  const n = Number(playerProfile?.handicap);
+  return Number.isFinite(n) ? Math.min(54, Math.max(0, Math.round(n))) : 14;
+}
+
+function playStyle(handicap = playerHandicap()) {
+  if (handicap <= 8) return "attack";
+  if (handicap <= 18) return "smart";
+  return "safe";
+}
+
+function playStyleLabel(style = playStyle()) {
+  if (style === "attack") return "Attack when it's on";
+  if (style === "safe") return "Protect the double";
+  return "Play smart";
+}
+
+function clubWithName(name) {
+  return clubDatabase.find((club) => club.name === name) || null;
+}
+
+function longestClubFrom(clubs) {
+  if (!clubs.length) return { name: "Driver", distance: 250 };
+  return [...clubs].sort((a, b) => b.distance - a.distance)[0];
+}
+
+function holeLengthYards(hole) {
+  if (hole?.tee && hole?.green) return calculateHaversineDistanceYards(hole.tee, hole.green);
+  return null;
+}
+
+function isNearPoint(pos, point, yards) {
+  return Boolean(pos && point && calculateHaversineDistanceYards(pos, point) <= yards);
+}
+
+function buildStrategy(ctx) {
+  const playsLikeYards = ctx.playsLikeYards;
+  const rawYards = ctx.rawYards;
+  const hole = ctx.hole;
+  const par = hole?.par || ctx.par || 4;
+  const hcp = ctx.handicap ?? 14;
+  const style = playStyle(hcp);
+  const clubs = ctx.clubs || [];
+  const driver = longestClubFrom(clubs);
+  const wood = clubs.find((c) => /3-wood|3 wood|hybrid/i.test(c.name) && c.name !== driver.name)
+    || { name: "3-Wood", distance: Math.round((driver.distance || 250) * 0.88) };
+  const wedge = clubs.find((c) => /pitching|gap wedge/i.test(c.name))
+    || { name: "Pitching Wedge", distance: 125 };
+  const extra = style === "attack" ? 2 : (style === "smart" ? 8 : 12);
+  const holeLen = holeLengthYards(hole);
+  const nearTee = isNearPoint(ctx.pos, hole?.tee, TEE_PROXIMITY_YD);
+  const onThisHoleTee = ctx.strokes === 0 && (
+    nearTee || (holeLen != null && Math.abs(rawYards - holeLen) < 50)
+  );
+  const hazards = (hole?.hazards || []).map((h) => classifyHazard(hole, h));
+  const frontGreenTrouble = hazards.filter((h) => h.yardsFromGreen < 48);
+  const landingTrouble = hazards.filter((h) => (
+    h.zone !== "green" && Math.abs(h.yardsFromTee - (driver.distance || 250)) < 45
+  ));
+  const waterShort = hazards.filter((h) => h.type === "water" && h.yardsFromGreen < 80);
+  const advice = [];
   let targetDistance = playsLikeYards;
-  let advice = "";
+  let preferLonger = style !== "attack";
+  let planLabel = playStyleLabel(style);
 
-  if (rawYards > 120) {
-    advice = "Aim for center of green. Ignore tucked pin locations.";
+  if (holeLen != null && rawYards > holeLen + 90) {
+    advice.push("GPS isn't at this hole yet. Walk to the tee or your ball before trusting the number.");
+    return { targetDistance: driver.distance, advice: advice.join(" "), preferLonger: false, planLabel, style };
+  }
+
+  if (onThisHoleTee && par === 3) {
+    targetDistance = playsLikeYards + extra;
+    if (frontGreenTrouble.length || waterShort.length) {
+      targetDistance += 6;
+      preferLonger = true;
+      advice.push("Trouble short of this par 3. Take enough club and use the middle of the green.");
+    } else if (style === "attack" && rawYards <= 150) {
+      advice.push("Par 3 in range. You can look at the pin if it's not tucked; otherwise the fat of the green.");
+    } else {
+      advice.push("Par 3: a 3 is a good score. Aim the fat of the green, not a sucker pin.");
+    }
+  } else if (onThisHoleTee && par === 4) {
+    const shortPar4 = holeLen != null && holeLen < (driver.distance || 250) + 30;
+    if ((landingTrouble.length || shortPar4) && style !== "attack") {
+      targetDistance = Math.min(wood.distance, Math.max(180, (holeLen || rawYards) - 40));
+      planLabel = "Club down";
+      advice.push(shortPar4
+        ? `Short par 4. ${wood.name} off the tee and leave a full wedge. Driver can run through.`
+        : `Hazard in the landing zone. ${wood.name} off the tee, then a simple approach.`);
+    } else {
+      targetDistance = driver.distance;
+      preferLonger = false;
+      advice.push("Tee shot: find the fairway. Aim away from trouble and don't try to overpower it.");
+    }
+    const left = hazards.some((h) => h.side === "left" && h.zone !== "green");
+    const right = hazards.some((h) => h.side === "right" && h.zone !== "green");
+    if (left && !right) advice.push("Keep it down the right side.");
+    if (right && !left) advice.push("Keep it down the left side.");
+    if (hole?.dogleg) advice.push(`It doglegs ${hole.dogleg}. Don't cut the corner.`);
+  } else if (onThisHoleTee && par === 5) {
+    targetDistance = landingTrouble.length && style !== "attack" ? wood.distance : driver.distance;
+    preferLonger = false;
+    advice.push("Par 5: fairway first. Position for a wedge in rather than hunting eagle.");
+  } else if (par === 5 && playsLikeYards > (wood.distance || 220) + 15 && style !== "attack") {
+    const layupTo = Math.max(95, Math.min(wedge.distance || 125, 115));
+    targetDistance = Math.max(90, playsLikeYards - layupTo);
+    preferLonger = false;
+    planLabel = "Lay up";
+    advice.push(`Don't go for this green. Lay up to about ${layupTo} yards and take your wedge.`);
+    if (waterShort.length) advice.push("Water is short. Lay up well before it.");
   } else {
-    advice = "In wedge range. Attack pin directly.";
+    targetDistance = playsLikeYards + extra;
+    if (frontGreenTrouble.length || waterShort.length) {
+      targetDistance += 6;
+      preferLonger = true;
+      advice.push("Hazard short of the green. Take one extra club and miss long or center.");
+    } else if (rawYards > 140 || style !== "attack") {
+      advice.push("Aim the center of the green. Middle of the putting surface beats a hero pin.");
+    } else {
+      advice.push("In scoring range. You can be more aggressive, but miss on the fat side of the green.");
+    }
   }
 
-  if (playerProfile.lateralBias > 2) {
-    advice += " Adjusting for stock fade: aim 8 yards left of target.";
-  } else if (playerProfile.lateralBias < -2) {
-    advice += " Adjusting for stock draw: aim 8 yards right of target.";
-  }
+  if (ctx.bias?.lateralBias > 2) advice.push("Your stock miss is a fade. Start it left of the safe line.");
+  else if (ctx.bias?.lateralBias < -2) advice.push("Your stock miss is a draw. Start it right of the safe line.");
 
-  return { targetDistance, advice };
+  return {
+    targetDistance: Math.round(targetDistance),
+    advice: advice.join(" "),
+    preferLonger,
+    planLabel,
+    style
+  };
+}
+
+function runCourseManagementEngine(playsLikeYards, rawYards) {
+  return buildStrategy({
+    playsLikeYards,
+    rawYards,
+    hole: holeByNumber(currentHole),
+    par: currentHolePar,
+    pos: currentPos,
+    strokes: currentHoleStrokes,
+    handicap: playerHandicap(),
+    clubs: clubDatabase,
+    bias: playerProfile
+  });
 }
 
 function logShot(type) {
@@ -1342,13 +1558,32 @@ function updateProfileUI() {
   if (nameInput && document.activeElement !== nameInput) {
     nameInput.value = golferName();
   }
+  const hcpInput = document.getElementById("handicapInput");
+  if (hcpInput && document.activeElement !== hcpInput) {
+    hcpInput.value = String(playerHandicap());
+  }
+  const planStatus = document.getElementById("planStatus");
+  if (planStatus) {
+    planStatus.innerText = `Play style: ${playStyleLabel()} (hcp ${playerHandicap()})`;
+  }
+  const planEl = document.getElementById("playPlan");
+  if (planEl && !targetPin) planEl.innerText = playStyleLabel();
   updateVoiceStatus();
 }
 
-function getBestClub(yards) {
+function getBestClub(yards, options = {}) {
   if (!clubDatabase.length) return null;
-  const sortedClubs = [...clubDatabase].sort((a, b) => Math.abs(a.distance - yards) - Math.abs(b.distance - yards));
-  return sortedClubs[0];
+  const preferLonger = Boolean(options.preferLonger);
+  const ranked = [...clubDatabase].sort((a, b) => Math.abs(a.distance - yards) - Math.abs(b.distance - yards));
+  const closest = ranked[0];
+  if (!preferLonger || ranked.length < 2) return closest;
+  const alternative = ranked[1];
+  const longer = closest.distance >= alternative.distance ? closest : alternative;
+  const shorter = closest.distance >= alternative.distance ? alternative : closest;
+  if (Math.abs(longer.distance - yards) <= Math.abs(shorter.distance - yards) + 8) {
+    return longer;
+  }
+  return closest;
 }
 
 function speakRecommendation() {
@@ -1394,6 +1629,21 @@ function setGolferName(raw, announce) {
   saveJSON("caddie_profile", playerProfile);
   updateProfileUI();
   if (announce) speakFeedback(`Righto. I'll call you ${golferName()}.`);
+}
+
+function setHandicap(value, announce) {
+  const n = Number(value);
+  playerProfile.handicap = Number.isFinite(n) ? Math.min(54, Math.max(0, Math.round(n))) : 14;
+  saveJSON("caddie_profile", playerProfile);
+  updateProfileUI();
+  if (currentPos && targetPin) refreshYardage();
+  if (announce) {
+    speakFeedback(`Handicap set to ${playerHandicap()}, ${golferName()}. ${playStyleLabel()}.`);
+  }
+}
+
+function onHandicapInputChange(event) {
+  setHandicap(event.target.value, false);
 }
 
 function onNameInputChange(event) {
@@ -1520,6 +1770,12 @@ window.CaddieSpeech = {
   scoreCaddieVoice,
   golferName,
   normalizeGolferName
+};
+
+window.CaddieStrategy = {
+  buildStrategy,
+  playStyle,
+  playStyleLabel
 };
 
 function calculateHaversineDistanceYards(pos1, pos2) {
