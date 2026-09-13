@@ -33,6 +33,10 @@ Voice recognition works best in **Chrome on Android**. Safari/iOS support for co
 
 For the Australian male voice, install **English (Australia)** in the phone's text-to-speech settings. On iPhone, Lee is the usual male Australian voice. The caddie uses the name in the Golfer field (default **Kerry**); you can also say `"call me Kerry"`.
 
+## User guide
+
+A printable 8-page guide (what the app does, a full round workflow, voice commands, and troubleshooting) is in [`docs/AI-Caddie-User-Guide.pdf`](docs/AI-Caddie-User-Guide.pdf). Rebuild it with `python3 docs/build_user_guide.py`.
+
 ## Project structure
 
 ```text
