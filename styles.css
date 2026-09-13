@@ -106,7 +106,8 @@ h1 {
 .history-card,
 .voice-guide-card,
 .controls-card,
-.location-card {
+.location-card,
+.profile-card {
   background: var(--card-bg);
   border-radius: 16px;
   padding: 20px;
@@ -246,7 +247,8 @@ h1 {
 
 .history-card h3,
 .voice-guide-card h3,
-.controls-card h3 {
+.controls-card h3,
+.profile-card h3 {
   font-size: 1rem;
   margin-bottom: 10px;
 }
@@ -303,8 +305,33 @@ h1 {
   color: var(--text-main);
 }
 
-.controls-card h3 {
+.controls-card h3,
+.profile-card h3 {
   color: var(--accent-green);
+}
+
+.profile-card input {
+  width: 100%;
+  margin: 4px 0 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: #162025;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.profile-card input:focus {
+  outline: 2px solid var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.voice-status {
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin-bottom: 12px;
 }
 
 .score-btn {

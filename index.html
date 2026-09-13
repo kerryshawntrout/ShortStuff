@@ -26,6 +26,14 @@
 
     <button id="startBtn" class="start-btn" type="button">START VOICE CADDIE</button>
 
+    <section class="profile-card">
+      <h3>Your caddie</h3>
+      <label class="metric-label" for="playerNameInput">Golfer name</label>
+      <input id="playerNameInput" type="text" maxlength="24" spellcheck="false" autocomplete="given-name" aria-label="Golfer name">
+      <p id="voiceStatus" class="voice-status">Looking for an Australian male voice…</p>
+      <button id="previewVoiceBtn" class="score-btn" type="button">Hear caddie voice</button>
+    </section>
+
     <section id="locationCard" class="location-card searching">
       <div class="metric-label">Where you are</div>
       <div id="courseName" class="location-title">Locating you…</div>
@@ -99,6 +107,7 @@
         <li><strong>"Mark pin"</strong> <span>Override GPS pin / green</span></li>
         <li><strong>"Hole 7"</strong> <span>Jump to a mapped hole</span></li>
         <li><strong>"Where am I?"</strong> <span>Hear course vs home</span></li>
+        <li><strong>"Call me Kerry"</strong> <span>Set the name the caddie uses</span></li>
         <li><strong>"Par 3 / 4 / 5"</strong> <span>Set hole par rating</span></li>
         <li><strong>"Add stroke" / "Count shot"</strong> <span>Add 1 stroke to hole</span></li>
         <li><strong>"Undo stroke"</strong> <span>Remove last stroke</span></li>

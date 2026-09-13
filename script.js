@@ -80,10 +80,12 @@ function saveJSON(key, value) {
 
 let clubDatabase = loadJSON("caddie_clubs", DEFAULT_CLUBS);
 let playerProfile = loadJSON("caddie_profile", {
+  name: "Kerry",
   handicap: 14,
   lateralBias: 0,
   distanceBias: 0
 });
+if (!playerProfile.name) playerProfile.name = "Kerry";
 let roundHistory = loadJSON("caddie_rounds", []);
 let savedPin = loadJSON("caddie_pin", null);
 let targetPin = null;
@@ -116,6 +118,7 @@ let pinSource = "none";
 let lastCourseQueryAt = 0;
 let lastCourseQueryPos = null;
 let courseLookupInFlight = false;
+let caddieVoice = null;
 
 // ==========================================
 // 2. INITIALIZATION & LISTENERS
@@ -137,7 +140,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("askCaddieBtn").addEventListener("click", speakRecommendation);
   document.getElementById("onCourseBtn").addEventListener("click", () => setLocationOverride("course", true));
   document.getElementById("offCourseBtn").addEventListener("click", () => setLocationOverride("home", true));
+  document.getElementById("previewVoiceBtn").addEventListener("click", previewCaddieVoice);
+  document.getElementById("playerNameInput").addEventListener("change", onNameInputChange);
+  document.getElementById("playerNameInput").addEventListener("blur", onNameInputChange);
 
+  initSpeechVoices();
   updateProfileUI();
   updateScoreUI();
   updatePinUI();
@@ -217,7 +224,7 @@ function initVoiceEngine() {
   recognizer = new SpeechRecognition();
   recognizer.continuous = true;
   recognizer.interimResults = false;
-  recognizer.lang = "en-US";
+  recognizer.lang = "en-AU";
 
   recognizer.onresult = (event) => {
     const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
@@ -247,6 +254,7 @@ function initVoiceEngine() {
   updateStartButton();
   updateStatus("Voice listening active", true);
   restartRecognition();
+  speakFeedback(`G'day ${golferName()}. I'm your caddie. Listening now.`);
 }
 
 function stopVoiceEngine() {
@@ -287,6 +295,11 @@ function parseVoiceCommand(speech) {
     speakLocation();
     return;
   }
+  const nameMatch = speech.match(/(?:my name is|call me)\s+([a-z][a-z' -]{1,22})/i);
+  if (nameMatch) {
+    setGolferName(nameMatch[1], true);
+    return;
+  }
   const holeMatch = speech.match(/\bhole (\d{1,2})\b/);
   if (holeMatch && !includesAny(speech, ["next hole", "finish hole", "skip hole"])) {
     goToHole(Number(holeMatch[1]), true);
@@ -322,7 +335,7 @@ function parseVoiceCommand(speech) {
   }
   if (includesAny(speech, ["what's my score", "whats my score", "current score", "total score"])) {
     const relText = getRelativeScoreSpeech(completedHoles, currentHoleStrokes, currentHolePar);
-    speakFeedback(`You are on hole ${currentHole} with ${currentHoleStrokes} strokes. Overall you are ${relText}.`);
+    speakFeedback(`${golferName()}, you're on hole ${currentHole} with ${currentHoleStrokes} strokes. Overall you're ${relText}.`);
     return;
   }
   if (includesAny(speech, ["finish round", "end round", "save round"])) {
@@ -336,7 +349,7 @@ function parseVoiceCommand(speech) {
   if (includesAny(speech, ["good shot", "in target", "hit green"])) {
     addStroke(false);
     logShot("hit");
-    speakFeedback(`Target hit logged. Stroke ${currentHoleStrokes} counted.`);
+    speakFeedback(`Beauty, ${golferName()}. Target hit logged. Stroke ${currentHoleStrokes} counted.`);
     return;
   }
   if (includesAny(speech, ["came up short", "too short", "short miss"])) {
@@ -484,8 +497,8 @@ async function markPinHere(announce) {
     : "Walk to your ball, then ask for distance or tap Ask Caddie.";
   if (announce) {
     speakFeedback(pinSource === "practice"
-      ? "Practice pin marked. This is only for testing off the course."
-      : "Pin marked. Walk to your ball and ask for distance.");
+      ? `Practice pin marked, ${golferName()}. That's only for testing off the course.`
+      : `Pin marked, ${golferName()}. Walk to your ball and ask for distance.`);
   }
   refreshYardage();
 }
@@ -533,7 +546,7 @@ function setLocationOverride(mode, announce) {
 
   if (mode === "home") {
     applyHomeMode("You're marked as at home. Pin setup stays optional.");
-    if (announce) speakFeedback("At home. I will not ask you to set a pin.");
+    if (announce) speakFeedback(`You're at home, ${golferName()}. I won't ask you to set a pin.`);
     return;
   }
 
@@ -541,22 +554,22 @@ function setLocationOverride(mode, announce) {
   if (currentPos) {
     maybeRefreshCourseContext(currentPos).then(() => refreshYardage());
   }
-  if (announce) speakFeedback("Treating this as a golf course. Mark the pin if I don't have a green.");
+  if (announce) speakFeedback(`No worries, ${golferName()}. Treating this as a golf course. Mark the pin if I don't have a green.`);
 }
 
 function speakLocation() {
   if (locationMode === "home") {
-    speakFeedback("You are off the course. I am not asking for a pin.");
+    speakFeedback(`You're off the course, ${golferName()}. I'm not asking for a pin.`);
     return;
   }
   if (locationMode === "course") {
     const course = detectedCourse?.name || "a golf course";
     const mapped = holeByNumber(currentHole);
     const holeText = mapped?.name ? `Hole ${mapped.hole} ${mapped.name}` : `hole ${currentHole}`;
-    speakFeedback(`You are on ${course}, ${holeText}, par ${currentHolePar}.`);
+    speakFeedback(`${golferName()}, you're on ${course}, ${holeText}, par ${currentHolePar}.`);
     return;
   }
-  speakFeedback("I have not confirmed a golf course yet.");
+  speakFeedback(`I haven't confirmed a golf course yet, ${golferName()}.`);
 }
 
 async function maybeRefreshCourseContext(pos) {
@@ -798,7 +811,7 @@ function goToHole(n, announce) {
   updateHeroForMode();
   if (announce) {
     const label = mapped?.name ? `${holeNum} ${mapped.name}` : String(holeNum);
-    speakFeedback(`Hole ${label}, par ${currentHolePar}.`);
+    speakFeedback(`${golferName()}, hole ${label}, par ${currentHolePar}.`);
   }
   if (currentPos) refreshYardage();
 }
@@ -1191,8 +1204,8 @@ function completeHole(skip, announce) {
   const nextHole = currentHole + 1;
   const relText = getRelativeScoreSpeech(completedHoles);
   const message = skip
-    ? `Skipping hole ${currentHole}. Moving to hole ${nextHole}.`
-    : `Hole ${currentHole} logged with ${currentHoleStrokes} strokes. You are currently ${relText}. Moving to hole ${nextHole}.`;
+    ? `Skipping hole ${currentHole}. Moving to hole ${nextHole}, ${golferName()}.`
+    : `Hole ${currentHole} logged with ${currentHoleStrokes} strokes. You're currently ${relText}. Moving to hole ${nextHole}, ${golferName()}.`;
 
   currentHole = nextHole;
   currentHoleStrokes = 0;
@@ -1228,7 +1241,7 @@ function finishRound(announce) {
   const finalRel = diff === 0 ? "Even par" : `${Math.abs(diff)} ${diff > 0 ? "over" : "under"}`;
 
   if (announce) {
-    speakFeedback(`Round saved to history. You completed ${completedHoles.length} holes with ${totalStrokes} gross strokes, finishing ${finalRel}.`);
+    speakFeedback(`Nice work ${golferName()}. Round saved to history. You completed ${completedHoles.length} holes with ${totalStrokes} gross strokes, finishing ${finalRel}.`);
   }
 
   currentHole = 1;
@@ -1324,6 +1337,12 @@ function updateProfileUI() {
 
   const biasElem = document.getElementById("playerBias");
   if (biasElem) biasElem.innerText = biasText;
+
+  const nameInput = document.getElementById("playerNameInput");
+  if (nameInput && document.activeElement !== nameInput) {
+    nameInput.value = golferName();
+  }
+  updateVoiceStatus();
 }
 
 function getBestClub(yards) {
@@ -1334,21 +1353,129 @@ function getBestClub(yards) {
 
 function speakRecommendation() {
   if (locationMode === "home" && pinSource !== "practice") {
-    speakFeedback("You're not on a golf course, so I don't have a green to aim at. I can still keep score.");
+    speakFeedback(`${golferName()}, we're not on a course, so I don't have a green to aim at. I can still keep score.`);
     return;
   }
   if (!targetPin) {
     speakFeedback(locationMode === "course"
-      ? "I don't have a green for this hole yet. Mark the pin from the green."
-      : "I haven't found a course yet. If you're playing, say I'm on a course, then mark the pin.");
+      ? `${golferName()}, I don't have a green for this hole yet. Mark the pin from the green.`
+      : `${golferName()}, I haven't found a course yet. If you're playing, say I'm on a course, then mark the pin.`);
     return;
   }
   if (!playsLikeDistYards || !recommendedClubObj) {
-    speakFeedback("Still calculating distance. Make sure GPS is on and you have walked to your ball.");
+    speakFeedback(`Still calculating distance, ${golferName()}. Make sure GPS is on and you've walked to your ball.`);
     return;
   }
-  const speechText = `Plays like ${playsLikeDistYards} yards. I recommend your ${recommendedClubObj.name}. ${currentStrategy}`;
+  const speechText = `${golferName()}, that plays like ${playsLikeDistYards} yards. I'd take your ${recommendedClubObj.name}. ${currentStrategy}`;
   speakFeedback(speechText);
+}
+
+function golferName() {
+  const raw = String(playerProfile?.name || "").trim();
+  return raw || "Kerry";
+}
+
+function normalizeGolferName(raw) {
+  const cleaned = String(raw || "")
+    .replace(/[^a-zA-Z\s'-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return "Kerry";
+  return cleaned
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ")
+    .slice(0, 24);
+}
+
+function setGolferName(raw, announce) {
+  playerProfile.name = normalizeGolferName(raw);
+  saveJSON("caddie_profile", playerProfile);
+  updateProfileUI();
+  if (announce) speakFeedback(`Righto. I'll call you ${golferName()}.`);
+}
+
+function onNameInputChange(event) {
+  setGolferName(event.target.value, false);
+}
+
+function previewCaddieVoice() {
+  speakFeedback(`G'day ${golferName()}. I'll caddie for you in an Australian voice. When you've got a number, just ask.`);
+}
+
+function initSpeechVoices() {
+  if (!window.speechSynthesis) {
+    updateVoiceStatus();
+    return;
+  }
+  const select = () => {
+    caddieVoice = pickCaddieVoice(window.speechSynthesis.getVoices() || []);
+    updateVoiceStatus();
+  };
+  select();
+  if (typeof window.speechSynthesis.addEventListener === "function") {
+    window.speechSynthesis.addEventListener("voiceschanged", select);
+  } else {
+    window.speechSynthesis.onvoiceschanged = select;
+  }
+}
+
+function updateVoiceStatus() {
+  const el = document.getElementById("voiceStatus");
+  if (!el) return;
+  if (!window.speechSynthesis) {
+    el.innerText = "This browser cannot speak. On-screen controls still work.";
+    return;
+  }
+  if (caddieVoice) {
+    const au = isAustralianVoice(caddieVoice);
+    const male = voiceGenderScore(caddieVoice) > 0;
+    const kind = au && male ? "Australian male" : (au ? "Australian" : (male ? "male English" : "closest available"));
+    el.innerText = `Voice: ${caddieVoice.name} · ${kind}`;
+    return;
+  }
+  el.innerText = "Voice: Australian English (male when this device has one installed).";
+}
+
+function isAustralianVoice(voice) {
+  const lang = String(voice?.lang || "").toLowerCase();
+  const name = String(voice?.name || "").toLowerCase();
+  return lang.startsWith("en-au") || name.includes("australian") || name.includes("australia") || name.includes("en-au");
+}
+
+function voiceGenderScore(voice) {
+  const name = String(voice?.name || "").toLowerCase();
+  if (/en-au-x-au[bf]/.test(name)) return -40;
+  if (/en-au-x-au[acd]/.test(name)) return 40;
+  if (/\b(female|karen|catherine|natasha|nicole|moira|samantha|zira|hazel|susan|fiona|tessa|serena|martha|heather|allison|ava|siri|victoria|veena|woman)\b/.test(name)) {
+    return -35;
+  }
+  if (/\b(male|lee|james|russell|gordon|william|daniel|david|mark|thomas|oliver|jack|ken|nathan|steve|alex|tom|fred|bruce|george)\b/.test(name)) {
+    return 35;
+  }
+  return 0;
+}
+
+function scoreCaddieVoice(voice) {
+  let score = 0;
+  const lang = String(voice?.lang || "").toLowerCase();
+  const name = String(voice?.name || "").toLowerCase();
+  if (isAustralianVoice(voice)) score += 60;
+  else if (lang.startsWith("en-gb") || name.includes("uk english") || name.includes("british")) score += 18;
+  else if (lang.startsWith("en")) score += 8;
+  score += voiceGenderScore(voice);
+  if (voice?.localService) score += 4;
+  if (name.includes("natural") || name.includes("enhanced") || name.includes("premium")) score += 6;
+  return score;
+}
+
+function pickCaddieVoice(voices) {
+  if (!Array.isArray(voices) || voices.length === 0) return null;
+  const ranked = voices
+    .map((voice) => ({ voice, score: scoreCaddieVoice(voice) }))
+    .sort((a, b) => b.score - a.score);
+  return ranked[0].voice;
 }
 
 function speakFeedback(message) {
@@ -1362,7 +1489,21 @@ function speakFeedback(message) {
   }
 
   window.speechSynthesis.cancel();
+  if (!caddieVoice) {
+    caddieVoice = pickCaddieVoice(window.speechSynthesis.getVoices() || []);
+    updateVoiceStatus();
+  }
   const utterance = new SpeechSynthesisUtterance(message);
+  utterance.lang = "en-AU";
+  utterance.rate = 0.98;
+  utterance.pitch = voiceGenderScore(caddieVoice) < 0 ? 0.78 : 0.9;
+  if (caddieVoice) utterance.voice = caddieVoice;
+  window.__lastCaddieUtterance = {
+    text: message,
+    lang: utterance.lang,
+    voiceName: caddieVoice?.name || "",
+    voiceLang: caddieVoice?.lang || ""
+  };
   utterance.onend = () => {
     isSpeaking = false;
     restartRecognition();
@@ -1373,6 +1514,13 @@ function speakFeedback(message) {
   };
   window.speechSynthesis.speak(utterance);
 }
+
+window.CaddieSpeech = {
+  pickCaddieVoice,
+  scoreCaddieVoice,
+  golferName,
+  normalizeGolferName
+};
 
 function calculateHaversineDistanceYards(pos1, pos2) {
   const R = 6371e3;
