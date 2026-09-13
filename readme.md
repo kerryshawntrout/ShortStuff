@@ -1,23 +1,34 @@
-# ⛳ Virtual Golf Caddie PWA
+# Virtual Golf Caddie PWA
 
-A lightweight, hands-free, voice-activated Progressive Web App (PWA) designed to give real-time golf club recommendations based on GPS distance, live elevation changes, and real-time wind speed and vector direction.
+A lightweight, hands-free Progressive Web App that recommends clubs from GPS yardage, elevation, and wind, and keeps score by voice or tap.
 
----
+## Features
 
-## 📌 Features
+* **Mark-the-pin GPS yardage:** Stand on the green, mark the pin, then walk to your ball for live distance.
+* **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
+* **Hands-free voice assistant:** Listens for commands like `"mark pin"`, `"okay caddie"`, `"add stroke"`, and `"next hole"`.
+* **On-screen scorekeeping:** Tap controls work even when the microphone is unavailable.
+* **Round memory:** In-progress rounds survive a refresh; finished rounds are stored locally.
+* **Offline app shell:** Service worker caches the UI so the scorekeeper still loads without signal.
 
-* 📍 **Real-Time GPS Tracking:** Uses high-accuracy device geolocation to calculate exact yardage to the target pin.
-* 🏔 **Elevation Adjustment:** Fetches elevation data for both your location and the green using the **Open-Elevation API** to compute "plays-like" yardage for uphill and downhill shots.
-* 💨 **Wind Vector Calculation:** Connects to the **Open-Meteo API** to get real-time wind speeds and directions, converting them into headwind and tailwind distance adjustments relative to your shooting trajectory.
-* 🎙 **Hands-Free Voice Assistant:** Uses the **Web Speech API** to continuously listen for keywords like `"caddie"`, `"club"`, or `"distance"` and verbally responds through your device's speaker or Bluetooth earpiece.
-* 🎨 **Clean, High-Contrast UI:** Designed specifically for outdoors and sunlight readability on mobile devices and smartwatches.
+## Quick start on the course
 
----
+1. Open the app and allow location (and microphone if you want voice).
+2. Stand at the pin/green and tap **Mark Pin Here** (or say `"mark pin"`).
+3. Walk to your ball. The GPS and plays-like numbers update automatically.
+4. Say `"okay caddie"` / `"distance"` or tap **Ask Caddie**.
+5. Log strokes with `"add stroke"` or the on-screen buttons, then `"next hole"`.
 
-## 📁 Project Structure
+Voice recognition works best in **Chrome on Android**. Safari/iOS support for continuous listening is limited; use the buttons there.
+
+## Project structure
 
 ```text
 virtual-golf-caddie/
-├── index.html   # Application DOM layout and component structure
-├── styles.css   # Dark-mode styled UI optimized for high contrast
-└── script.js    # Core app logic: GPS, APIs, Wind Math, Speech Engine
+├── index.html    # App layout
+├── styles.css    # High-contrast outdoor UI
+├── script.js     # GPS, APIs, voice, scoring
+├── sw.js         # Offline cache
+├── manifest.json # PWA install metadata
+└── aii.png       # App icon
+```
