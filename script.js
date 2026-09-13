@@ -66,6 +66,7 @@ let telemetryInFlight = false;
 let lastTelemetryAt = 0;
 let lastElevYards = null;
 let lastWindData = null;
+let lastGpsErrorCode = null;
 
 // ==========================================
 // 2. INITIALIZATION & LISTENERS
@@ -117,13 +118,15 @@ function startGpsWatch() {
   }
 
   watchId = navigator.geolocation.watchPosition(
-    onPositionUpdate,
+    (position) => {
+      lastGpsErrorCode = null;
+      onPositionUpdate(position);
+    },
     (err) => {
+      lastGpsErrorCode = err.code;
       console.error("GPS Error:", err);
-      const message = err.code === err.PERMISSION_DENIED
-        ? "Location permission denied"
-        : "Waiting for GPS fix";
-      updateStatus(message, voiceEnabled, err.code === err.PERMISSION_DENIED);
+      const denied = err.code === err.PERMISSION_DENIED;
+      updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", voiceEnabled, denied);
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 }
   );
@@ -351,8 +354,12 @@ async function markPinHere(announce) {
   startGpsWatch();
 
   if (!currentPos) {
-    if (announce) speakFeedback("Still waiting on a GPS fix. Try again in a moment.");
-    updateStatus("Waiting for GPS fix", voiceEnabled);
+    const denied = lastGpsErrorCode === 1;
+    const message = denied
+      ? "Location permission denied. Enable GPS in the browser to mark the pin."
+      : "Still waiting on a GPS fix. Try again in a moment.";
+    if (announce) speakFeedback(message);
+    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", voiceEnabled, denied);
     return;
   }
 
