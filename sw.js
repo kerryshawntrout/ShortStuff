@@ -1,4 +1,4 @@
-const CACHE_NAME = "caddie-v2";
+const CACHE_NAME = "caddie-v3";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -36,7 +36,11 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = event.request.url;
-  if (url.includes("api.open-elevation.com") || url.includes("api.open-meteo.com")) {
+  if (
+    url.includes("api.open-elevation.com") ||
+    url.includes("api.open-meteo.com") ||
+    url.includes("overpass")
+  ) {
     return;
   }
 

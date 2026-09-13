@@ -105,11 +105,71 @@ h1 {
 .hero-card,
 .history-card,
 .voice-guide-card,
-.controls-card {
+.controls-card,
+.location-card {
   background: var(--card-bg);
   border-radius: 16px;
   padding: 20px;
   border: 1px solid var(--border-color);
+}
+
+.location-card.searching {
+  border-color: rgba(52, 152, 219, 0.45);
+}
+
+.location-card.home {
+  border-color: var(--border-color);
+}
+
+.location-card.course {
+  border-color: rgba(46, 204, 113, 0.55);
+}
+
+.location-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 4px 0 8px;
+}
+
+.location-card.course .location-title {
+  color: var(--accent-green);
+}
+
+.location-detail {
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.location-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.hole-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.hole-chip {
+  min-width: 36px;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: #162025;
+  color: var(--text-main);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hole-chip.active {
+  background: var(--accent-green);
+  color: #000;
+  border-color: var(--accent-green);
 }
 
 .hero-card {
@@ -263,6 +323,10 @@ h1 {
   background: var(--accent-green);
   color: #000;
   border-color: var(--accent-green);
+  grid-column: span 2;
+}
+
+#markPinBtn.primary {
   grid-column: span 2;
 }
 

@@ -26,18 +26,29 @@
 
     <button id="startBtn" class="start-btn" type="button">START VOICE CADDIE</button>
 
+    <section id="locationCard" class="location-card searching">
+      <div class="metric-label">Where you are</div>
+      <div id="courseName" class="location-title">Locating you…</div>
+      <p id="courseDetail" class="location-detail">Checking GPS for a nearby golf course. At home you can keep score without setting a pin.</p>
+      <div id="holeStrip" class="hole-strip hidden"></div>
+      <div class="location-actions">
+        <button id="onCourseBtn" class="score-btn" type="button">I'm on a course</button>
+        <button id="offCourseBtn" class="score-btn" type="button">I'm at home</button>
+      </div>
+    </section>
+
     <section class="hero-card">
       <div class="metric-label">Adjusted Distance</div>
       <div id="playsLike" class="plays-like">-- yd</div>
-      <div id="recommendedClub" class="recommended-club">Mark the pin to start</div>
-      <p id="strategyAdvice" class="strategy-advice">Stand on the green and tap Mark Pin, then walk to your ball for yardage and club advice.</p>
-      <p id="pinStatus" class="pin-status">Pin not set. Mark it from the green (or say "mark pin").</p>
+      <div id="recommendedClub" class="recommended-club">Locating you</div>
+      <p id="strategyAdvice" class="strategy-advice">Checking whether you are on a golf course. Pin setup is only needed on the course.</p>
+      <p id="pinStatus" class="pin-status">Waiting for GPS…</p>
     </section>
 
     <section class="controls-card">
-      <h3>On-Course Controls</h3>
+      <h3>Round Controls</h3>
       <div class="controls-grid">
-        <button id="markPinBtn" class="score-btn primary" type="button">Mark Pin Here</button>
+        <button id="markPinBtn" class="score-btn" type="button">Drop practice pin</button>
         <button id="addStrokeBtn" class="score-btn" type="button">Add Stroke</button>
         <button id="undoStrokeBtn" class="score-btn" type="button">Undo Stroke</button>
         <button id="nextHoleBtn" class="score-btn gold" type="button">Next Hole</button>
@@ -85,7 +96,9 @@
     <section class="voice-guide-card">
       <h3>Hands-Free Voice Commands</h3>
       <ul class="voice-command-list">
-        <li><strong>"Mark pin"</strong> <span>Save GPS pin / green</span></li>
+        <li><strong>"Mark pin"</strong> <span>Override GPS pin / green</span></li>
+        <li><strong>"Hole 7"</strong> <span>Jump to a mapped hole</span></li>
+        <li><strong>"Where am I?"</strong> <span>Hear course vs home</span></li>
         <li><strong>"Par 3 / 4 / 5"</strong> <span>Set hole par rating</span></li>
         <li><strong>"Add stroke" / "Count shot"</strong> <span>Add 1 stroke to hole</span></li>
         <li><strong>"Undo stroke"</strong> <span>Remove last stroke</span></li>
