@@ -9,6 +9,7 @@ A lightweight, hands-free Progressive Web App that recommends clubs from GPS yar
 * **Mark-the-pin override:** If a course isn't mapped, or the pin is tucked, stand on the green and mark it.
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
 * **Hands-free voice assistant:** Listens for commands like `"okay caddie"`, `"add stroke"`, `"next hole"`, and `"hole 7"`.
+* **Australian male caddie voice:** Speaks with an `en-AU` male voice when the phone has one installed, and uses the golfer's name in conversation.
 * **On-screen scorekeeping:** Tap controls work even when the microphone is unavailable.
 * **Round memory:** In-progress rounds survive a refresh; finished rounds are stored locally.
 * **Offline app shell:** Service worker caches the UI so the scorekeeper still loads without signal.
@@ -28,6 +29,8 @@ A lightweight, hands-free Progressive Web App that recommends clubs from GPS yar
 5. Log strokes with `"add stroke"` or the on-screen buttons, then `"next hole"`.
 
 Voice recognition works best in **Chrome on Android**. Safari/iOS support for continuous listening is limited; use the buttons there.
+
+For the Australian male voice, install **English (Australia)** in the phone's text-to-speech settings. On iPhone, Lee is the usual male Australian voice. The caddie uses the name in the Golfer field (default **Kerry**); you can also say `"call me Kerry"`.
 
 ## Project structure
 
