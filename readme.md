@@ -10,6 +10,7 @@ A lightweight, hands-free Progressive Web App that recommends clubs from GPS yar
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
 * **Hands-free voice assistant:** Listens for commands like `"okay caddie"`, `"add stroke"`, `"next hole"`, and `"hole 7"`.
 * **Australian male caddie voice:** Speaks with an `en-AU` male voice when the phone has one installed, and uses the golfer's name in conversation.
+* **Course strategy:** Uses handicap, hole par, and mapped hazards to choose conservative vs aggressive plays: club-down on short par 4s, lay up on long par 5s, extra club over trouble, and miss to the fat of the green.
 * **On-screen scorekeeping:** Tap controls work even when the microphone is unavailable.
 * **Round memory:** In-progress rounds survive a refresh; finished rounds are stored locally.
 * **Offline app shell:** Service worker caches the UI so the scorekeeper still loads without signal.
