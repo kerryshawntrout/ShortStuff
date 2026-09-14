@@ -911,7 +911,14 @@ function restoreOrAimPin(pos) {
 function aimAtCurrentHoleGreen() {
   const mapped = holeByNumber(currentHole);
   const aim = mapped?.pin || mapped?.green;
-  if (!aim) return false;
+  if (!aim) {
+    if (pinSource === "course" || pinSource === "none") {
+      targetPin = null;
+      pinSource = "none";
+      updatePinUI();
+    }
+    return false;
+  }
 
   const same = targetPin && calculateHaversineDistanceYards(targetPin, aim) < 3;
   pinSource = "course";
@@ -1078,12 +1085,11 @@ function updateHeroForMode() {
 function updateMarkPinButton() {
   const btn = document.getElementById("markPinBtn");
   if (!btn) return;
-  const needsPin = locationMode === "course" && CaddieCourseMemory.holeNeedsGreen(holeByNumber(currentHole)) && !targetPin;
+  const needsGreen = CaddieCourseMemory.holeNeedsGreen(holeByNumber(currentHole));
+  const needsPin = locationMode === "course" && needsGreen && !targetPin;
   btn.classList.toggle("primary", needsPin);
   if (locationMode === "course") {
-    btn.innerText = (pinSource === "course" || !CaddieCourseMemory.holeNeedsGreen(holeByNumber(currentHole)))
-      ? "Override pin here"
-      : "Mark Pin Here";
+    btn.innerText = needsGreen ? "Mark Pin Here" : "Override pin here";
   } else {
     btn.innerText = "Drop practice pin";
   }
