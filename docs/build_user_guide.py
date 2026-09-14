@@ -334,6 +334,14 @@ def build():
         "driveway, tap <b>I’m at home</b>.",
         styles["Body"]
     ))
+    story.append(Paragraph("Teaching a missing hole", styles["H2"]))
+    story.append(Paragraph(
+        "Totteridge and other local tracks may be missing a few holes on the public map. Dashed hole "
+        "numbers are the gaps. On that tee, tap <b>Save tee here</b> (or say “save tee”). On the green, "
+        "<b>Mark Pin Here</b>. The phone keeps those points. Next round the caddie aims from the tee "
+        "without waiting on OpenStreetMap. This stays on the device; it is not uploaded.",
+        styles["Body"]
+    ))
 
     # ---- 4 ROUND WORKFLOW ----
     story.append(Paragraph("4. How to play a round", styles["H1"]))
@@ -432,7 +440,8 @@ def build():
     ))
     story.append(command_table([
         ("“Okay caddie”, “distance”, “what club”", "Plays-like number, club, and strategy."),
-        ("“Mark pin”, “that’s the pin”", "Saves GPS as the target. On the green for an unmapped hole or a tucked pin."),
+        ("“Mark pin”, “that’s the pin”", "Saves GPS as the target. On a missing green, this is remembered for next round."),
+        ("“Save tee”, “that’s the tee”", "Saves this tee for the current hole on this phone."),
         ("“Hole 7”", "Jumps to that mapped hole and its green. Saves the previous hole if it already had strokes."),
         ("“Where am I?”, “what course”", "Home versus course name and hole."),
         ("“I’m at home” / “I’m on a course”", "Overrides GPS if the map is wrong."),
@@ -474,7 +483,7 @@ def build():
     story.append(command_table([
         ("Still asking to mark a pin at home", "Force-refresh or reopen the Home Screen app so you are not on an old version. Confirm Location is on. Tap I’m at home if you live next to a course."),
         ("US or female voice", "Install English (Australia) TTS. On iPhone download Lee. Tap Hear caddie voice again."),
-        ("No course name on the first tee", "Wait for GPS. If the course is unmapped, tap I’m on a course and mark the pin on each green."),
+        ("No course name on the first tee", "Wait for GPS. If the course is unmapped, tap I’m on a course. Teach missing holes with Save tee and Mark pin."),
         ("Yardage is hundreds of yards off", "Wrong hole is selected, or an old pin is still stored. Tap the correct hole, or mark pin from the green you are actually playing."),
         ("Voice stops listening", "It pauses while it talks. If it dies, Stop then Start Voice Caddie. Chrome on Android is the reliable listener."),
         ("iPhone will not listen continuously", "Use the Round Controls buttons. Score, strategy, and GPS still work."),
@@ -491,8 +500,8 @@ def build():
     ))
     story.append(Paragraph(
         "OpenStreetMap is volunteer cartography. A municipal course may have perfect greens; a private track "
-        "may only have an outline. The caddie will still keep score and still give handicap-based plans. "
-        "Mark the pin when the map is thin. That is not a failure of the round — it is how you fully use the tool you have.",
+        "may only have an outline. Teach the gaps on the round: Save tee, then Mark pin. Those points stay on "
+        "the phone for next time. The caddie will still keep score either way.",
         styles["Body"]
     ))
     story.append(Spacer(1, 6 * mm))

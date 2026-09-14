@@ -6,6 +6,7 @@ A lightweight, hands-free Progressive Web App that recommends clubs from GPS yar
 
 * **Course-aware GPS:** Uses OpenStreetMap to tell home from a golf course. At home it keeps score and does not ask you to set a pin.
 * **Mapped greens:** On a tagged course it reads holes/greens and aims at the current green automatically.
+* **Teach missing holes:** If a hole isn't mapped, save the tee and mark the pin on the green. The phone keeps that for the next round.
 * **Mark-the-pin override:** If a course isn't mapped, or the pin is tucked, stand on the green and mark it.
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
 * **Hands-free voice assistant:** Listens for commands like `"okay caddie"`, `"add stroke"`, `"next hole"`, and `"hole 7"`.
@@ -21,7 +22,9 @@ A lightweight, hands-free Progressive Web App that recommends clubs from GPS yar
 
 **On a mapped course:** Allow location. The course name and hole strip appear, and yardage aims at that hole's green. Walk to your ball and ask for a club.
 
-**On an unmapped course:** Tap **I'm on a course**, stand on the green, then **Mark Pin Here** (or say `"mark pin"`).
+**On an unmapped hole:** Tap the hole number (dashed chips are missing). Stand on the tee and tap **Save tee** (or say `"save tee"`). On the green tap **Mark Pin Here**. Next round that hole is already in the app.
+
+**On an unmapped course:** Tap **I'm on a course**, then teach tees and greens the same way.
 
 1. Open the app and allow location (and microphone if you want voice).
 2. Confirm the location card shows the course (or tap **I'm on a course**).
@@ -41,10 +44,11 @@ A printable 8-page guide (what the app does, a full round workflow, voice comman
 
 ```text
 virtual-golf-caddie/
-├── index.html    # App layout
-├── styles.css    # High-contrast outdoor UI
-├── script.js     # GPS, APIs, voice, scoring
-├── sw.js         # Offline cache
-├── manifest.json # PWA install metadata
-└── aii.png       # App icon
+├── index.html        # App layout
+├── styles.css        # High-contrast outdoor UI
+├── script.js         # GPS, APIs, voice, scoring
+├── course-memory.js  # Holes taught on-round, stored on the phone
+├── sw.js             # Offline cache
+├── manifest.json     # PWA install metadata
+└── aii.png           # App icon
 ```

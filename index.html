@@ -45,6 +45,7 @@
       <div class="location-actions">
         <button id="onCourseBtn" class="score-btn" type="button">I'm on a course</button>
         <button id="offCourseBtn" class="score-btn" type="button">I'm at home</button>
+        <button id="saveTeeBtn" class="score-btn hidden" type="button">Save tee here</button>
       </div>
     </section>
 
@@ -108,7 +109,8 @@
     <section class="voice-guide-card">
       <h3>Hands-Free Voice Commands</h3>
       <ul class="voice-command-list">
-        <li><strong>"Mark pin"</strong> <span>Override GPS pin / green</span></li>
+        <li><strong>"Mark pin"</strong> <span>Save this green / override GPS pin</span></li>
+        <li><strong>"Save tee"</strong> <span>Remember this tee for next round</span></li>
         <li><strong>"Hole 7"</strong> <span>Jump to a mapped hole</span></li>
         <li><strong>"Where am I?"</strong> <span>Hear course vs home</span></li>
         <li><strong>"Call me Kerry"</strong> <span>Set the name the caddie uses</span></li>
@@ -127,6 +129,7 @@
     </section>
   </div>
 
+  <script src="course-memory.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
