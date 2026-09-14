@@ -2,9 +2,10 @@
 // 1. STATE MANAGEMENT & LOCAL STORAGE
 // ==========================================
 const DEFAULT_CLUBS = [
-  { name: "Driver", distance: 250, hits: 0 },
-  { name: "3-Wood", distance: 220, hits: 0 },
-  { name: "4-Iron", distance: 190, hits: 0 },
+  { name: "Driver", distance: 220, hits: 0 },
+  { name: "5-Wood", distance: 210, hits: 0 },
+  { name: "7-Wood", distance: 200, hits: 0 },
+  { name: "3-Hybrid", distance: 190, hits: 0 },
   { name: "5-Iron", distance: 180, hits: 0 },
   { name: "6-Iron", distance: 170, hits: 0 },
   { name: "7-Iron", distance: 160, hits: 0 },
