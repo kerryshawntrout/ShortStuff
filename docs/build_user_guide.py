@@ -297,7 +297,7 @@ def build():
         "You can also say “handicap 14”.",
     ], styles))
     story.append(callout(
-        "<b>Why handicap matters.</b> A 14-handicap on a 273-yard par 4 should hear “3-wood, leave a wedge,” not “hit driver at the flag.” A 5-handicap can take more risk. Put in the number you actually play to.",
+        "<b>Why handicap matters.</b> A 14-handicap on a 273-yard par 4 should hear “5-wood, leave a wedge,” not “hit driver at the flag.” A 5-handicap can take more risk. Put in the number you actually play to.",
         styles
     ))
 
@@ -332,6 +332,14 @@ def build():
         "Then stand on the green and tap <b>Mark Pin Here</b> / say “mark pin”. Walk back to the ball "
         "for yardage. Repeat on each green. If the app thinks you are on a course when you are in the "
         "driveway, tap <b>I’m at home</b>.",
+        styles["Body"]
+    ))
+    story.append(Paragraph("Teaching a missing hole", styles["H2"]))
+    story.append(Paragraph(
+        "Totteridge and other local tracks may be missing a few holes on the public map. Dashed hole "
+        "numbers are the gaps. On that tee, tap <b>Save tee here</b> (or say “save tee”). On the green, "
+        "<b>Mark Pin Here</b>. The phone keeps those points. Next round the caddie aims from the tee "
+        "without waiting on OpenStreetMap. This stays on the device; it is not uploaded.",
         styles["Body"]
     ))
 
@@ -371,7 +379,7 @@ def build():
     ], styles))
     story.append(KeepTogether([
         screenshot(ASSETS / "strategy_crop.jpg", 78),
-        Paragraph("On a short par 4 at handicap 14: 3-wood, club down, leave a full wedge.", styles["Caption"]),
+        Paragraph("On a short par 4 at handicap 14: 5-wood, club down, leave a full wedge.", styles["Caption"]),
     ]))
 
     # ---- 6 STRATEGY ----
@@ -383,7 +391,7 @@ def build():
     ))
     story.append(Paragraph("How it thinks", styles["H2"]))
     story.append(bullets([
-        "<b>Short par 4s (typical 14-handicap):</b> 3-wood or similar off the tee, wedge in. Driver can run through.",
+        "<b>Short par 4s (typical 14-handicap):</b> 5-wood or 7-wood off the tee, wedge in. Driver can run through.",
         "<b>Par 3s:</b> fat of the green is a good 3. Extra club if trouble is short.",
         "<b>Par 5s:</b> fairway first. If the green is not on in two for your bag, it lays up to about a full wedge (~110 yards) instead of recommending driver at a 280-yard green.",
         "<b>Approaches:</b> extra club for mid- and high-handicaps (amateurs miss short). Aim the middle. If a bunker or water sits short, take more club and miss long or centre.",
@@ -414,7 +422,8 @@ def build():
     # ---- 8 TRAIN THE BAG ----
     story.append(Paragraph("8. Training your bag", styles["H1"]))
     story.append(Paragraph(
-        "Stock distances are a starting point (driver 250, 7-iron 160, and so on). They are not Kerry’s bag until you teach them.",
+        "The stock bag is Kerry’s: driver 220, 5-wood 210, 7-wood 200, 3-hybrid 190, then irons and wedges. "
+        "“Came up short” / “flew long” still tune those numbers after real shots.",
         styles["Body"]
     ))
     story.append(bullets([
@@ -432,7 +441,8 @@ def build():
     ))
     story.append(command_table([
         ("“Okay caddie”, “distance”, “what club”", "Plays-like number, club, and strategy."),
-        ("“Mark pin”, “that’s the pin”", "Saves GPS as the target. On the green for an unmapped hole or a tucked pin."),
+        ("“Mark pin”, “that’s the pin”", "Saves GPS as the target. On a missing green, this is remembered for next round."),
+        ("“Save tee”, “that’s the tee”", "Saves this tee for the current hole on this phone."),
         ("“Hole 7”", "Jumps to that mapped hole and its green. Saves the previous hole if it already had strokes."),
         ("“Where am I?”, “what course”", "Home versus course name and hole."),
         ("“I’m at home” / “I’m on a course”", "Overrides GPS if the map is wrong."),
@@ -474,7 +484,7 @@ def build():
     story.append(command_table([
         ("Still asking to mark a pin at home", "Force-refresh or reopen the Home Screen app so you are not on an old version. Confirm Location is on. Tap I’m at home if you live next to a course."),
         ("US or female voice", "Install English (Australia) TTS. On iPhone download Lee. Tap Hear caddie voice again."),
-        ("No course name on the first tee", "Wait for GPS. If the course is unmapped, tap I’m on a course and mark the pin on each green."),
+        ("No course name on the first tee", "Wait for GPS. If the course is unmapped, tap I’m on a course. Teach missing holes with Save tee and Mark pin."),
         ("Yardage is hundreds of yards off", "Wrong hole is selected, or an old pin is still stored. Tap the correct hole, or mark pin from the green you are actually playing."),
         ("Voice stops listening", "It pauses while it talks. If it dies, Stop then Start Voice Caddie. Chrome on Android is the reliable listener."),
         ("iPhone will not listen continuously", "Use the Round Controls buttons. Score, strategy, and GPS still work."),
@@ -491,8 +501,8 @@ def build():
     ))
     story.append(Paragraph(
         "OpenStreetMap is volunteer cartography. A municipal course may have perfect greens; a private track "
-        "may only have an outline. The caddie will still keep score and still give handicap-based plans. "
-        "Mark the pin when the map is thin. That is not a failure of the round — it is how you fully use the tool you have.",
+        "may only have an outline. Teach the gaps on the round: Save tee, then Mark pin. Those points stay on "
+        "the phone for next time. The caddie will still keep score either way.",
         styles["Body"]
     ))
     story.append(Spacer(1, 6 * mm))

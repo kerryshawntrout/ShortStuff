@@ -149,6 +149,10 @@ h1 {
   gap: 10px;
 }
 
+#saveTeeBtn {
+  grid-column: 1 / -1;
+}
+
 .hole-strip {
   display: flex;
   flex-wrap: wrap;
@@ -165,6 +169,15 @@ h1 {
   color: var(--text-main);
   font-weight: 700;
   cursor: pointer;
+}
+
+.hole-chip.missing {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.hole-chip.learned:not(.missing) {
+  border-color: rgba(46, 204, 113, 0.55);
 }
 
 .hole-chip.active {

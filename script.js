@@ -34,8 +34,11 @@ const OVERPASS_ENDPOINTS = [
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo");
 const DEMO_POSITIONS = {
   home: { lat: 40.440624, lng: -79.995888 },
-  course: { lat: 40.438009, lng: -79.934861 }
+  course: { lat: 40.438009, lng: -79.934861 },
+  learn: { lat: 40.438009, lng: -79.934861 }
 };
+const OSM_GAP_HOLES = new Set([5, 6, 7, 16]);
+const COURSE_MEMORY_KEY = "caddie_course_memory";
 const DEMO_COURSE = {
   name: "Bob O'Connor Golf Course",
   holes: [
@@ -79,7 +82,50 @@ function saveJSON(key, value) {
   }
 }
 
-let clubDatabase = loadJSON("caddie_clubs", DEFAULT_CLUBS);
+const OLD_FACTORY_CLUB_NAMES = [
+  "Driver", "3-Wood", "4-Iron", "5-Iron", "6-Iron", "7-Iron", "8-Iron",
+  "9-Iron", "Pitching Wedge", "Gap Wedge", "Sand Wedge", "Lob Wedge"
+];
+
+function cloneClubs(clubs) {
+  return (clubs || []).map((club) => ({
+    name: club.name,
+    distance: Number(club.distance) || 0,
+    hits: Number(club.hits) || 0
+  }));
+}
+
+function isOldFactoryBag(clubs) {
+  if (!Array.isArray(clubs) || clubs.length !== OLD_FACTORY_CLUB_NAMES.length) return false;
+  return clubs.every((club, i) => club && club.name === OLD_FACTORY_CLUB_NAMES[i]);
+}
+
+function migrateClubBag(stored) {
+  if (!stored || !Array.isArray(stored) || stored.length === 0) return cloneClubs(DEFAULT_CLUBS);
+  if (!isOldFactoryBag(stored)) return cloneClubs(stored);
+  const byName = Object.fromEntries(stored.map((club) => [club.name, club]));
+  return DEFAULT_CLUBS.map((fresh) => {
+    const prev = byName[fresh.name];
+    if (!prev) return { ...fresh };
+    return {
+      name: fresh.name,
+      distance: Number.isFinite(Number(prev.distance)) ? Number(prev.distance) : fresh.distance,
+      hits: Number(prev.hits) || 0
+    };
+  });
+}
+
+function loadClubDatabase() {
+  const stored = loadJSON("caddie_clubs", null);
+  if (!stored || isOldFactoryBag(stored)) {
+    const clubs = migrateClubBag(stored);
+    saveJSON("caddie_clubs", clubs);
+    return clubs;
+  }
+  return cloneClubs(stored);
+}
+
+let clubDatabase = loadClubDatabase();
 let playerProfile = loadJSON("caddie_profile", {
   name: "Kerry",
   handicap: 14,
@@ -117,6 +163,8 @@ let locationOverride = null;
 let detectedCourse = null;
 let courseHoles = [];
 let pinSource = "none";
+let courseMemoryStore = loadJSON(COURSE_MEMORY_KEY, {});
+let activeCourseMemory = null;
 let lastCourseQueryAt = 0;
 let lastCourseQueryPos = null;
 let courseLookupInFlight = false;
@@ -134,6 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("startBtn").addEventListener("click", toggleVoiceCaddie);
   document.getElementById("markPinBtn").addEventListener("click", () => markPinHere(true));
+  document.getElementById("saveTeeBtn").addEventListener("click", () => saveTeeHere(true));
   document.getElementById("addStrokeBtn").addEventListener("click", () => addStroke(true));
   document.getElementById("undoStrokeBtn").addEventListener("click", () => undoStroke(true));
   document.getElementById("nextHoleBtn").addEventListener("click", () => completeHole(false, true));
@@ -176,7 +225,7 @@ async function initCaddie() {
 function startGpsWatch() {
   if (watchId !== null) return;
 
-  const demoPos = DEMO_POSITIONS[DEMO_MODE];
+  const demoPos = DEMO_POSITIONS[DEMO_MODE] || (DEMO_MODE === "learn" ? DEMO_POSITIONS.learn : null);
   if (demoPos) {
     watchId = "demo";
     lastGpsErrorCode = null;
@@ -285,6 +334,10 @@ function restartRecognition() {
 function parseVoiceCommand(speech) {
   if (includesAny(speech, ["mark pin", "set pin", "mark the pin", "mark the green", "that's the pin", "thats the pin"])) {
     markPinHere(true);
+    return;
+  }
+  if (includesAny(speech, ["save tee", "mark tee", "that's the tee", "thats the tee", "this is the tee", "tee here"])) {
+    saveTeeHere(true);
     return;
   }
   if (includesAny(speech, ["i'm at home", "im at home", "at home", "off the course", "off course"])) {
@@ -499,19 +552,54 @@ async function markPinHere(announce) {
   lastWindData = null;
   lastElevYards = null;
   saveJSON("caddie_pin", targetPin);
+
+  let learnedGreen = false;
+  if (locationMode === "course") {
+    learnedGreen = rememberHolePoint("green", currentPos);
+  }
+
   updatePinUI(0);
   document.getElementById("rawDistance").innerText = "0 yd";
   document.getElementById("playsLike").innerText = "0 yd";
   document.getElementById("recommendedClub").innerText = pinSource === "practice" ? "Practice pin" : "Pin marked";
   document.getElementById("strategyAdvice").innerText = pinSource === "practice"
     ? "Practice pin dropped. This is for testing at home, not a course green."
-    : "Walk to your ball, then ask for distance or tap Ask Caddie.";
+    : (learnedGreen
+      ? `Hole ${currentHole} green saved on this phone. Next round I'll aim here from the tee.`
+      : "Walk to your ball, then ask for distance or tap Ask Caddie.");
   if (announce) {
     speakFeedback(pinSource === "practice"
       ? `Practice pin marked, ${golferName()}. That's only for testing off the course.`
-      : `Pin marked, ${golferName()}. Walk to your ball and ask for distance.`);
+      : (learnedGreen
+        ? `Green saved for hole ${currentHole}, ${golferName()}. Next time I'll have it.`
+        : `Pin marked, ${golferName()}. Walk to your ball and ask for distance.`));
   }
   refreshYardage();
+}
+
+function saveTeeHere(announce) {
+  startGpsWatch();
+  if (!currentPos) {
+    const denied = lastGpsErrorCode === 1;
+    const message = denied
+      ? "Location permission denied. Enable GPS to save the tee."
+      : "Still waiting on a GPS fix. Try again in a moment.";
+    if (announce) speakFeedback(message);
+    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", voiceEnabled, denied);
+    return;
+  }
+  if (locationMode !== "course") {
+    if (announce) speakFeedback(`Save the tee once you're on a course, ${golferName()}.`);
+    return;
+  }
+  const saved = rememberHolePoint("tee", currentPos);
+  updateLocationUI();
+  updateHeroForMode();
+  if (announce) {
+    speakFeedback(saved
+      ? `Tee saved for hole ${currentHole}, ${golferName()}. Mark the pin when you get to the green.`
+      : `Hole ${currentHole} already has a tee, ${golferName()}.`);
+  }
 }
 
 function updatePinUI(rawYards) {
@@ -522,8 +610,8 @@ function updatePinUI(rawYards) {
     pinElem.classList.remove("set");
     if (locationMode === "home") {
       pinElem.innerText = "No pin needed at home. Drop a practice pin only if you want to test GPS.";
-    } else if (locationMode === "course" && !holeByNumber(currentHole)?.green) {
-      pinElem.innerText = "No mapped green for this hole. Mark the pin from the green (or say \"mark pin\").";
+    } else if (locationMode === "course" && CaddieCourseMemory.holeNeedsGreen(holeByNumber(currentHole))) {
+      pinElem.innerText = "No mapped green for this hole. Stand on the green, mark the pin, and I'll remember it next time.";
     } else if (locationMode === "course") {
       pinElem.innerText = "Aiming at the mapped green once GPS settles.";
     } else if (lastGpsErrorCode === 1) {
@@ -599,8 +687,8 @@ async function maybeRefreshCourseContext(pos) {
     return;
   }
 
-  if (DEMO_MODE === "course" && locationOverride !== "home") {
-    if (locationMode !== "course") applyCourseModel({ ...DEMO_COURSE }, pos);
+  if ((DEMO_MODE === "course" || DEMO_MODE === "learn") && locationOverride !== "home") {
+    if (locationMode !== "course") applyCourseModel(demoCourseModel(), pos);
     else syncHoleTarget(pos);
     return;
   }
@@ -662,10 +750,99 @@ async function lookupCourseFromOsm(pos) {
   applyCourseModel(model, pos);
 }
 
+function demoCourseModel() {
+  if (DEMO_MODE === "learn") {
+    return {
+      name: "Totteridge Golf Course",
+      holes: DEMO_COURSE.holes.filter((hole) => !OSM_GAP_HOLES.has(hole.hole))
+    };
+  }
+  return { ...DEMO_COURSE };
+}
+
+function persistCourseMemory() {
+  saveJSON(COURSE_MEMORY_KEY, courseMemoryStore);
+}
+
+function ensureActiveCourseMemory(pos, name) {
+  const Mem = window.CaddieCourseMemory;
+  const courseName = name || detectedCourse?.name;
+  const at = pos || currentPos;
+  let mem = Mem.findCourseMemory(courseMemoryStore, at, courseName);
+  if (!mem) {
+    const key = Mem.memoryKey(courseName, at);
+    mem = {
+      key,
+      name: Mem.isGenericCourseName(courseName) ? "Golf course" : courseName,
+      lat: at?.lat,
+      lng: at?.lng,
+      holes: {}
+    };
+  } else if (!Mem.isGenericCourseName(courseName) && mem.key !== Mem.slugCourseName(courseName)) {
+    delete courseMemoryStore[mem.key];
+    mem = { ...mem, key: Mem.slugCourseName(courseName), name: courseName };
+  }
+  activeCourseMemory = mem;
+  return mem;
+}
+
+function rememberHolePoint(kind, pos) {
+  const Mem = window.CaddieCourseMemory;
+  if (!pos || locationMode !== "course") return false;
+  const hole = holeByNumber(currentHole);
+  if (kind === "tee" && !Mem.holeNeedsTee(hole)) return false;
+  if (kind === "green" && !Mem.holeNeedsGreen(hole)) return false;
+
+  const mem = ensureActiveCourseMemory(pos, detectedCourse?.name);
+  const patch = { par: currentHolePar, updatedAt: Date.now() };
+  patch[kind] = { lat: pos.lat, lng: pos.lng };
+  activeCourseMemory = Mem.upsertHoleMemory(mem, currentHole, patch);
+  courseMemoryStore[activeCourseMemory.key] = activeCourseMemory;
+  persistCourseMemory();
+  applyLearnedHoleToState(currentHole, activeCourseMemory.holes[String(currentHole)]);
+  return true;
+}
+
+function applyLearnedHoleToState(holeNum, saved) {
+  if (!saved) return;
+  let hole = holeByNumber(holeNum);
+  if (!hole) {
+    hole = {
+      hole: holeNum,
+      par: saved.par || currentHolePar || 4,
+      name: null,
+      tee: null,
+      green: null,
+      pin: null,
+      hazards: []
+    };
+    courseHoles.push(hole);
+  }
+  if (saved.tee && !hole.tee) hole.tee = { ...saved.tee };
+  if (saved.green && !hole.green) hole.green = { ...saved.green };
+  if (saved.par) hole.par = saved.par;
+  hole.learned = true;
+  hole.missing = !hole.green;
+  courseHoles = window.CaddieCourseMemory.padCourseHoles(courseHoles, currentHole);
+  renderHoleStrip();
+  updateLocationUI();
+  updateMarkPinButton();
+  updateSaveTeeButton();
+}
+
+function mergeModelWithMemory(model, pos) {
+  const Mem = window.CaddieCourseMemory;
+  const mem = Mem.findCourseMemory(courseMemoryStore, pos, model?.name);
+  const merged = Mem.mergeCourseModel(model, mem);
+  merged.holes = Mem.padCourseHoles(merged.holes, currentHole);
+  return merged;
+}
+
 function applyHomeMode(detail) {
   locationMode = "home";
   detectedCourse = null;
   courseHoles = [];
+  activeCourseMemory = null;
   if (pinSource !== "practice") {
     targetPin = null;
     playsLikeDistYards = 0;
@@ -685,9 +862,25 @@ function applyHomeMode(detail) {
 }
 
 function applyUnmappedCourse(pos) {
+  const Mem = window.CaddieCourseMemory;
+  const mem = Mem.findCourseMemory(courseMemoryStore, pos, detectedCourse?.name);
+  if (mem && Object.keys(mem.holes || {}).length) {
+    applyCourseModel({ name: mem.name || "Golf course", holes: [] }, pos);
+    return;
+  }
   locationMode = "course";
   detectedCourse = { name: "Unmapped course" };
-  courseHoles = [];
+  courseHoles = Mem.padCourseHoles([{
+    hole: 18,
+    par: 4,
+    name: null,
+    tee: null,
+    green: null,
+    pin: null,
+    hazards: [],
+    missing: true
+  }], currentHole);
+  ensureActiveCourseMemory(pos, detectedCourse.name);
   if (pinSource !== "manual") {
     if (pos && savedPin && calculateHaversineDistanceYards(pos, savedPin) < NEARBY_PIN_YD) {
       targetPin = savedPin;
@@ -697,7 +890,7 @@ function applyUnmappedCourse(pos) {
       pinSource = "none";
     }
   }
-  updateLocationUI("Treating this as a course, but OpenStreetMap has no holes here. Mark the pin on each green.");
+  updateLocationUI("Treating this as a course. OpenStreetMap has no holes here yet. Save the tee, then mark the pin on each green. I'll remember them next round.");
   renderHoleStrip();
   updateMarkPinButton();
   updatePinUI();
@@ -711,8 +904,10 @@ function applyUnmappedCourse(pos) {
 
 function applyCourseModel(model, pos) {
   locationMode = "course";
-  detectedCourse = { name: model.name || model.course?.name || "Golf course" };
-  courseHoles = (model.holes || []).map((hole) => ({ ...hole }));
+  const merged = mergeModelWithMemory(model, pos);
+  detectedCourse = { name: merged.name || model.name || model.course?.name || "Golf course" };
+  courseHoles = (merged.holes || []).map((hole) => ({ ...hole }));
+  ensureActiveCourseMemory(pos, detectedCourse.name);
 
   if (!completedHoles.length && currentHoleStrokes === 0) {
     const inferred = inferHoleFromPosition(pos, courseHoles);
@@ -759,7 +954,14 @@ function restoreOrAimPin(pos) {
 function aimAtCurrentHoleGreen() {
   const mapped = holeByNumber(currentHole);
   const aim = mapped?.pin || mapped?.green;
-  if (!aim) return false;
+  if (!aim) {
+    if (pinSource === "course" || pinSource === "none") {
+      targetPin = null;
+      pinSource = "none";
+      updatePinUI();
+    }
+    return false;
+  }
 
   const same = targetPin && calculateHaversineDistanceYards(targetPin, aim) < 3;
   pinSource = "course";
@@ -822,7 +1024,11 @@ function goToHole(n, announce) {
   updateHeroForMode();
   if (announce) {
     const label = mapped?.name ? `${holeNum} ${mapped.name}` : String(holeNum);
-    speakFeedback(`${golferName()}, hole ${label}, par ${currentHolePar}.`);
+    if (CaddieCourseMemory.holeNeedsGreen(mapped)) {
+      speakFeedback(`${golferName()}, hole ${label} isn't mapped yet. Save the tee here, then mark the pin on the green. I'll keep it for next time.`);
+    } else {
+      speakFeedback(`${golferName()}, hole ${label}, par ${currentHolePar}.`);
+    }
   }
   if (currentPos) refreshYardage();
 }
@@ -866,10 +1072,22 @@ function updateLocationUI(detail) {
     card.classList.add("course");
     const mapped = holeByNumber(currentHole);
     const holeLabel = mapped
-      ? `Hole ${mapped.hole}${mapped.name ? ` ${mapped.name}` : ""} · Par ${mapped.par}`
+      ? `Hole ${mapped.hole}${mapped.name ? ` ${mapped.name}` : ""} · Par ${mapped.par || currentHolePar}`
       : `Hole ${currentHole}`;
     nameEl.innerText = detectedCourse?.name || "On a golf course";
-    detailEl.innerText = (detail || `${holeLabel}. ${mapped?.green ? "Targeting the mapped green." : "Mark the pin on the green."}`) + demoNote;
+    const learnedCount = courseHoles.filter((hole) => hole.learned && (hole.tee || hole.green)).length;
+    const learnedNote = learnedCount
+      ? ` ${learnedCount} hole${learnedCount === 1 ? "" : "s"} saved on this phone.`
+      : "";
+    let fallback = `${holeLabel}. ${mapped?.green ? "Targeting the mapped green." : "Mark the pin on the green."}`;
+    if (CaddieCourseMemory.holeNeedsGreen(mapped)) {
+      fallback = `${holeLabel} isn't mapped yet. Stand on the tee and tap Save tee, then mark the pin on the green. I'll remember it next round.`;
+    } else if (CaddieCourseMemory.holeNeedsTee(mapped)) {
+      fallback = `${holeLabel}. Green is mapped. Tap Save tee if you're on the tee so I recognize this hole next time.`;
+    } else {
+      fallback = `${holeLabel}. Targeting the mapped green.${learnedNote}`;
+    }
+    detailEl.innerText = (detail || fallback) + demoNote;
   } else {
     card.classList.add("searching");
     nameEl.innerText = locationMode === "unknown" ? "Location unclear" : "Locating you…";
@@ -895,9 +1113,9 @@ function updateHeroForMode() {
     advice.innerText = "No golf course around this GPS point. Keep score, review clubs, or drop an optional practice pin. On a mapped course I pick up the greens automatically.";
   } else if (locationMode === "course") {
     club.innerText = detectedCourse?.name || "On course";
-    advice.innerText = holeByNumber(currentHole)?.green
-      ? "Targeting the mapped green for this hole. Walk to your ball for yardage, or override the pin if it's tucked."
-      : "This course isn't mapped hole-by-hole. Stand on the green and mark the pin.";
+    advice.innerText = CaddieCourseMemory.holeNeedsGreen(holeByNumber(currentHole))
+      ? "This hole isn't mapped yet. Save the tee, then mark the pin on the green. Next round I'll aim automatically."
+      : "Targeting the mapped green for this hole. Walk to your ball for yardage, or override the pin if it's tucked.";
   } else if (locationMode === "unknown") {
     club.innerText = "Scorekeeper ready";
     advice.innerText = "Couldn't confirm a nearby course. Scorekeeping works now. If you're playing, tap I'm on a course.";
@@ -910,15 +1128,22 @@ function updateHeroForMode() {
 function updateMarkPinButton() {
   const btn = document.getElementById("markPinBtn");
   if (!btn) return;
-  const needsPin = locationMode === "course" && !holeByNumber(currentHole)?.green && !targetPin;
+  const needsGreen = CaddieCourseMemory.holeNeedsGreen(holeByNumber(currentHole));
+  const needsPin = locationMode === "course" && needsGreen && !targetPin;
   btn.classList.toggle("primary", needsPin);
   if (locationMode === "course") {
-    btn.innerText = (pinSource === "course" || holeByNumber(currentHole)?.green)
-      ? "Override pin here"
-      : "Mark Pin Here";
+    btn.innerText = needsGreen ? "Mark Pin Here" : "Override pin here";
   } else {
     btn.innerText = "Drop practice pin";
   }
+  updateSaveTeeButton();
+}
+
+function updateSaveTeeButton() {
+  const btn = document.getElementById("saveTeeBtn");
+  if (!btn) return;
+  const show = locationMode === "course" && CaddieCourseMemory.holeNeedsTee(holeByNumber(currentHole));
+  btn.classList.toggle("hidden", !show);
 }
 
 function renderHoleStrip() {
@@ -934,9 +1159,15 @@ function renderHoleStrip() {
   for (const hole of courseHoles) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "hole-chip" + (hole.hole === currentHole ? " active" : "");
+    const missing = CaddieCourseMemory.holeNeedsGreen(hole);
+    btn.className = "hole-chip"
+      + (hole.hole === currentHole ? " active" : "")
+      + (missing ? " missing" : "")
+      + (hole.learned ? " learned" : "");
     btn.textContent = String(hole.hole);
-    btn.title = `${hole.name || `Hole ${hole.hole}`} · Par ${hole.par}`;
+    btn.title = missing
+      ? `${hole.name || `Hole ${hole.hole}`} · not mapped yet`
+      : `${hole.name || `Hole ${hole.hole}`} · Par ${hole.par}`;
     btn.addEventListener("click", () => goToHole(hole.hole, true));
     strip.appendChild(btn);
   }
@@ -1215,8 +1446,21 @@ function clubWithName(name) {
 }
 
 function longestClubFrom(clubs) {
-  if (!clubs.length) return { name: "Driver", distance: 250 };
+  if (!clubs.length) return { name: "Driver", distance: 220 };
   return [...clubs].sort((a, b) => b.distance - a.distance)[0];
+}
+
+function clubDownFromDriver(clubs, driver) {
+  const list = clubs || [];
+  const driverName = driver?.name;
+  const named = list.find((club) =>
+    club.name !== driverName && /wood|hybrid/i.test(club.name || "")
+  );
+  if (named) return named;
+  const shorter = list
+    .filter((club) => club.name !== driverName && club.distance < (driver?.distance || Infinity))
+    .sort((a, b) => b.distance - a.distance)[0];
+  return shorter || { name: "5-Wood", distance: Math.round((driver?.distance || 220) * 0.95) };
 }
 
 function holeLengthYards(hole) {
@@ -1237,8 +1481,7 @@ function buildStrategy(ctx) {
   const style = playStyle(hcp);
   const clubs = ctx.clubs || [];
   const driver = longestClubFrom(clubs);
-  const wood = clubs.find((c) => /3-wood|3 wood|hybrid/i.test(c.name) && c.name !== driver.name)
-    || { name: "3-Wood", distance: Math.round((driver.distance || 250) * 0.88) };
+  const wood = clubDownFromDriver(clubs, driver);
   const wedge = clubs.find((c) => /pitching|gap wedge/i.test(c.name))
     || { name: "Pitching Wedge", distance: 125 };
   const extra = style === "attack" ? 2 : (style === "smart" ? 8 : 12);
@@ -1382,7 +1625,20 @@ function persistRoundState() {
 function setHolePar(par, announce) {
   currentHolePar = par;
   persistRoundState();
+  if (locationMode === "course") {
+    const mem = ensureActiveCourseMemory(currentPos, detectedCourse?.name);
+    activeCourseMemory = CaddieCourseMemory.upsertHoleMemory(mem, currentHole, {
+      par,
+      parSet: true,
+      updatedAt: Date.now()
+    });
+    courseMemoryStore[activeCourseMemory.key] = activeCourseMemory;
+    persistCourseMemory();
+    const hole = holeByNumber(currentHole);
+    if (hole) hole.par = par;
+  }
   updateScoreUI();
+  updateLocationUI();
   if (announce) speakFeedback(`Hole ${currentHole} set to Par ${par}.`);
 }
 
@@ -1433,7 +1689,13 @@ function completeHole(skip, announce) {
   aimAtCurrentHoleGreen();
   renderHoleStrip();
   updateLocationUI();
-  if (announce) speakFeedback(message);
+  if (announce) {
+    const nextMapped = holeByNumber(nextHole);
+    const teach = CaddieCourseMemory.holeNeedsGreen(nextMapped)
+      ? ` Hole ${nextHole} isn't mapped yet. Save the tee, then mark the pin on the green.`
+      : "";
+    speakFeedback(message + teach);
+  }
   if (currentPos) refreshYardage();
 }
 
@@ -1776,7 +2038,10 @@ window.CaddieSpeech = {
 window.CaddieStrategy = {
   buildStrategy,
   playStyle,
-  playStyleLabel
+  playStyleLabel,
+  clubDownFromDriver,
+  migrateClubBag,
+  isOldFactoryBag
 };
 
 function calculateHaversineDistanceYards(pos1, pos2) {
