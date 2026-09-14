@@ -82,7 +82,50 @@ function saveJSON(key, value) {
   }
 }
 
-let clubDatabase = loadJSON("caddie_clubs", DEFAULT_CLUBS);
+const OLD_FACTORY_CLUB_NAMES = [
+  "Driver", "3-Wood", "4-Iron", "5-Iron", "6-Iron", "7-Iron", "8-Iron",
+  "9-Iron", "Pitching Wedge", "Gap Wedge", "Sand Wedge", "Lob Wedge"
+];
+
+function cloneClubs(clubs) {
+  return (clubs || []).map((club) => ({
+    name: club.name,
+    distance: Number(club.distance) || 0,
+    hits: Number(club.hits) || 0
+  }));
+}
+
+function isOldFactoryBag(clubs) {
+  if (!Array.isArray(clubs) || clubs.length !== OLD_FACTORY_CLUB_NAMES.length) return false;
+  return clubs.every((club, i) => club && club.name === OLD_FACTORY_CLUB_NAMES[i]);
+}
+
+function migrateClubBag(stored) {
+  if (!stored || !Array.isArray(stored) || stored.length === 0) return cloneClubs(DEFAULT_CLUBS);
+  if (!isOldFactoryBag(stored)) return cloneClubs(stored);
+  const byName = Object.fromEntries(stored.map((club) => [club.name, club]));
+  return DEFAULT_CLUBS.map((fresh) => {
+    const prev = byName[fresh.name];
+    if (!prev) return { ...fresh };
+    return {
+      name: fresh.name,
+      distance: Number.isFinite(Number(prev.distance)) ? Number(prev.distance) : fresh.distance,
+      hits: Number(prev.hits) || 0
+    };
+  });
+}
+
+function loadClubDatabase() {
+  const stored = loadJSON("caddie_clubs", null);
+  if (!stored || isOldFactoryBag(stored)) {
+    const clubs = migrateClubBag(stored);
+    saveJSON("caddie_clubs", clubs);
+    return clubs;
+  }
+  return cloneClubs(stored);
+}
+
+let clubDatabase = loadClubDatabase();
 let playerProfile = loadJSON("caddie_profile", {
   name: "Kerry",
   handicap: 14,
@@ -1403,8 +1446,21 @@ function clubWithName(name) {
 }
 
 function longestClubFrom(clubs) {
-  if (!clubs.length) return { name: "Driver", distance: 250 };
+  if (!clubs.length) return { name: "Driver", distance: 220 };
   return [...clubs].sort((a, b) => b.distance - a.distance)[0];
+}
+
+function clubDownFromDriver(clubs, driver) {
+  const list = clubs || [];
+  const driverName = driver?.name;
+  const named = list.find((club) =>
+    club.name !== driverName && /wood|hybrid/i.test(club.name || "")
+  );
+  if (named) return named;
+  const shorter = list
+    .filter((club) => club.name !== driverName && club.distance < (driver?.distance || Infinity))
+    .sort((a, b) => b.distance - a.distance)[0];
+  return shorter || { name: "5-Wood", distance: Math.round((driver?.distance || 220) * 0.95) };
 }
 
 function holeLengthYards(hole) {
@@ -1425,8 +1481,7 @@ function buildStrategy(ctx) {
   const style = playStyle(hcp);
   const clubs = ctx.clubs || [];
   const driver = longestClubFrom(clubs);
-  const wood = clubs.find((c) => /3-wood|3 wood|hybrid/i.test(c.name) && c.name !== driver.name)
-    || { name: "3-Wood", distance: Math.round((driver.distance || 250) * 0.88) };
+  const wood = clubDownFromDriver(clubs, driver);
   const wedge = clubs.find((c) => /pitching|gap wedge/i.test(c.name))
     || { name: "Pitching Wedge", distance: 125 };
   const extra = style === "attack" ? 2 : (style === "smart" ? 8 : 12);
@@ -1983,7 +2038,10 @@ window.CaddieSpeech = {
 window.CaddieStrategy = {
   buildStrategy,
   playStyle,
-  playStyleLabel
+  playStyleLabel,
+  clubDownFromDriver,
+  migrateClubBag,
+  isOldFactoryBag
 };
 
 function calculateHaversineDistanceYards(pos1, pos2) {

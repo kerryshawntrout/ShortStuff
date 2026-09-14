@@ -297,7 +297,7 @@ def build():
         "You can also say “handicap 14”.",
     ], styles))
     story.append(callout(
-        "<b>Why handicap matters.</b> A 14-handicap on a 273-yard par 4 should hear “3-wood, leave a wedge,” not “hit driver at the flag.” A 5-handicap can take more risk. Put in the number you actually play to.",
+        "<b>Why handicap matters.</b> A 14-handicap on a 273-yard par 4 should hear “5-wood, leave a wedge,” not “hit driver at the flag.” A 5-handicap can take more risk. Put in the number you actually play to.",
         styles
     ))
 
@@ -379,7 +379,7 @@ def build():
     ], styles))
     story.append(KeepTogether([
         screenshot(ASSETS / "strategy_crop.jpg", 78),
-        Paragraph("On a short par 4 at handicap 14: 3-wood, club down, leave a full wedge.", styles["Caption"]),
+        Paragraph("On a short par 4 at handicap 14: 5-wood, club down, leave a full wedge.", styles["Caption"]),
     ]))
 
     # ---- 6 STRATEGY ----
@@ -391,7 +391,7 @@ def build():
     ))
     story.append(Paragraph("How it thinks", styles["H2"]))
     story.append(bullets([
-        "<b>Short par 4s (typical 14-handicap):</b> 3-wood or similar off the tee, wedge in. Driver can run through.",
+        "<b>Short par 4s (typical 14-handicap):</b> 5-wood or 7-wood off the tee, wedge in. Driver can run through.",
         "<b>Par 3s:</b> fat of the green is a good 3. Extra club if trouble is short.",
         "<b>Par 5s:</b> fairway first. If the green is not on in two for your bag, it lays up to about a full wedge (~110 yards) instead of recommending driver at a 280-yard green.",
         "<b>Approaches:</b> extra club for mid- and high-handicaps (amateurs miss short). Aim the middle. If a bunker or water sits short, take more club and miss long or centre.",
@@ -422,7 +422,8 @@ def build():
     # ---- 8 TRAIN THE BAG ----
     story.append(Paragraph("8. Training your bag", styles["H1"]))
     story.append(Paragraph(
-        "Stock distances are a starting point (driver 250, 7-iron 160, and so on). They are not Kerry’s bag until you teach them.",
+        "The stock bag is Kerry’s: driver 220, 5-wood 210, 7-wood 200, 3-hybrid 190, then irons and wedges. "
+        "“Came up short” / “flew long” still tune those numbers after real shots.",
         styles["Body"]
     ))
     story.append(bullets([
