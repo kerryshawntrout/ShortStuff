@@ -25,6 +25,10 @@ const COURSE_REQUERY_MS = 4 * 60 * 1000;
 const OVERPASS_TIMEOUT_MS = 10000;
 const NEARBY_PIN_YD = 2200;
 const TEE_PROXIMITY_YD = 80;
+const GPS_UI_MS = 800;
+const MAX_COURSE_MEMORIES = 6;
+const MAX_HOLE_HAZARDS = 6;
+const MAX_SAVED_ROUNDS = 12;
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
@@ -54,29 +58,32 @@ const DEMO_POSITIONS = {
 };
 const OSM_GAP_HOLES = new Set([5, 6, 7, 16]);
 const COURSE_MEMORY_KEY = "caddie_course_memory";
-const DEMO_COURSE = {
-  name: "Bob O'Connor Golf Course",
-  holes: [
-    { hole: 1, par: 4, name: "Fairfield", tee: { lat: 40.438009, lng: -79.934861 }, green: { lat: 40.438469, lng: -79.937753 }, hazards: [{ type: "bunker", lat: 40.43842, lng: -79.93755 }] },
-    { hole: 2, par: 4, name: "The Moor", tee: { lat: 40.438200, lng: -79.937582 }, green: { lat: 40.437009, lng: -79.934240 } },
-    { hole: 3, par: 4, name: "Lowlands", tee: { lat: 40.436723, lng: -79.934063 }, green: { lat: 40.437892, lng: -79.938162 } },
-    { hole: 4, par: 4, name: "Greenheath", tee: { lat: 40.437382, lng: -79.937890 }, green: { lat: 40.436464, lng: -79.934201 } },
-    { hole: 5, par: 3, name: "Belle View", tee: { lat: 40.436229, lng: -79.934066 }, green: { lat: 40.435678, lng: -79.935129 }, hazards: [{ type: "bunker", lat: 40.43580, lng: -79.93485 }] },
-    { hole: 6, par: 4, name: "Midlothian", tee: { lat: 40.436241, lng: -79.934780 }, green: { lat: 40.436786, lng: -79.937455 } },
-    { hole: 7, par: 3, name: "The Copse", tee: { lat: 40.436681, lng: -79.936571 }, green: { lat: 40.437339, lng: -79.938316 } },
-    { hole: 8, par: 4, name: "Midway", tee: { lat: 40.437489, lng: -79.939156 }, green: { lat: 40.439579, lng: -79.939621 } },
-    { hole: 9, par: 4, name: "The Ravine", tee: { lat: 40.439480, lng: -79.939963 }, green: { lat: 40.437309, lng: -79.939544 }, hazards: [{ type: "water", lat: 40.43755, lng: -79.93985 }] },
-    { hole: 10, par: 4, name: "Westward Ho", tee: { lat: 40.437519, lng: -79.939880 }, green: { lat: 40.438590, lng: -79.942002 } },
-    { hole: 11, par: 4, name: "The Meadow", tee: { lat: 40.438927, lng: -79.942319 }, green: { lat: 40.437106, lng: -79.943515 }, hazards: [{ type: "bunker", lat: 40.43725, lng: -79.94330 }] },
-    { hole: 12, par: 3, name: "Long Acre", tee: { lat: 40.437017, lng: -79.942996 }, green: { lat: 40.438239, lng: -79.942052 } },
-    { hole: 13, par: 4, name: "The Hillside", tee: { lat: 40.437853, lng: -79.942035 }, green: { lat: 40.437119, lng: -79.939772 } },
-    { hole: 14, par: 3, name: "The Dell", tee: { lat: 40.437155, lng: -79.939493 }, green: { lat: 40.435674, lng: -79.938935 } },
-    { hole: 15, par: 3, name: "San Juan", tee: { lat: 40.435563, lng: -79.938759 }, green: { lat: 40.436074, lng: -79.937051 } },
-    { hole: 16, par: 4, name: "Fort Pitt", tee: { lat: 40.436190, lng: -79.936818 }, green: { lat: 40.437228, lng: -79.939272 } },
-    { hole: 17, par: 4, name: "Home", tee: { lat: 40.437438, lng: -79.938874 }, green: { lat: 40.439493, lng: -79.939004 } },
-    { hole: 18, par: 4, name: "The Reach", tee: { lat: 40.439484, lng: -79.938702 }, green: { lat: 40.438382, lng: -79.935149 } }
-  ]
-};
+
+function getDemoCourse() {
+  return {
+    name: "Bob O'Connor Golf Course",
+    holes: [
+      { hole: 1, par: 4, name: "Fairfield", tee: { lat: 40.438009, lng: -79.934861 }, green: { lat: 40.438469, lng: -79.937753 }, hazards: [{ type: "bunker", lat: 40.43842, lng: -79.93755 }] },
+      { hole: 2, par: 4, name: "The Moor", tee: { lat: 40.438200, lng: -79.937582 }, green: { lat: 40.437009, lng: -79.934240 } },
+      { hole: 3, par: 4, name: "Lowlands", tee: { lat: 40.436723, lng: -79.934063 }, green: { lat: 40.437892, lng: -79.938162 } },
+      { hole: 4, par: 4, name: "Greenheath", tee: { lat: 40.437382, lng: -79.937890 }, green: { lat: 40.436464, lng: -79.934201 } },
+      { hole: 5, par: 3, name: "Belle View", tee: { lat: 40.436229, lng: -79.934066 }, green: { lat: 40.435678, lng: -79.935129 }, hazards: [{ type: "bunker", lat: 40.43580, lng: -79.93485 }] },
+      { hole: 6, par: 4, name: "Midlothian", tee: { lat: 40.436241, lng: -79.934780 }, green: { lat: 40.436786, lng: -79.937455 } },
+      { hole: 7, par: 3, name: "The Copse", tee: { lat: 40.436681, lng: -79.936571 }, green: { lat: 40.437339, lng: -79.938316 } },
+      { hole: 8, par: 4, name: "Midway", tee: { lat: 40.437489, lng: -79.939156 }, green: { lat: 40.439579, lng: -79.939621 } },
+      { hole: 9, par: 4, name: "The Ravine", tee: { lat: 40.439480, lng: -79.939963 }, green: { lat: 40.437309, lng: -79.939544 }, hazards: [{ type: "water", lat: 40.43755, lng: -79.93985 }] },
+      { hole: 10, par: 4, name: "Westward Ho", tee: { lat: 40.437519, lng: -79.939880 }, green: { lat: 40.438590, lng: -79.942002 } },
+      { hole: 11, par: 4, name: "The Meadow", tee: { lat: 40.438927, lng: -79.942319 }, green: { lat: 40.437106, lng: -79.943515 }, hazards: [{ type: "bunker", lat: 40.43725, lng: -79.94330 }] },
+      { hole: 12, par: 3, name: "Long Acre", tee: { lat: 40.437017, lng: -79.942996 }, green: { lat: 40.438239, lng: -79.942052 } },
+      { hole: 13, par: 4, name: "The Hillside", tee: { lat: 40.437853, lng: -79.942035 }, green: { lat: 40.437119, lng: -79.939772 } },
+      { hole: 14, par: 3, name: "The Dell", tee: { lat: 40.437155, lng: -79.939493 }, green: { lat: 40.435674, lng: -79.938935 } },
+      { hole: 15, par: 3, name: "San Juan", tee: { lat: 40.435563, lng: -79.938759 }, green: { lat: 40.436074, lng: -79.937051 } },
+      { hole: 16, par: 4, name: "Fort Pitt", tee: { lat: 40.436190, lng: -79.936818 }, green: { lat: 40.437228, lng: -79.939272 } },
+      { hole: 17, par: 4, name: "Home", tee: { lat: 40.437438, lng: -79.938874 }, green: { lat: 40.439493, lng: -79.939004 } },
+      { hole: 18, par: 4, name: "The Reach", tee: { lat: 40.439484, lng: -79.938702 }, green: { lat: 40.438382, lng: -79.935149 } }
+    ]
+  };
+}
 
 function loadJSON(key, fallback) {
   try {
@@ -150,6 +157,10 @@ let playerProfile = loadJSON("caddie_profile", {
 if (!playerProfile.name) playerProfile.name = "Kerry";
 if (!Number.isFinite(Number(playerProfile.handicap))) playerProfile.handicap = 14;
 let roundHistory = loadJSON("caddie_rounds", []);
+if (Array.isArray(roundHistory) && roundHistory.length > MAX_SAVED_ROUNDS) {
+  roundHistory = roundHistory.slice(0, MAX_SAVED_ROUNDS);
+  saveJSON("caddie_rounds", roundHistory);
+}
 let savedPin = loadJSON("caddie_pin", null);
 let targetPin = null;
 
@@ -179,11 +190,14 @@ let detectedCourse = null;
 let courseHoles = [];
 let pinSource = "none";
 let courseMemoryStore = loadJSON(COURSE_MEMORY_KEY, {});
+if (!courseMemoryStore || typeof courseMemoryStore !== "object") courseMemoryStore = {};
 let activeCourseMemory = null;
 let lastCourseQueryAt = 0;
 let lastCourseQueryPos = null;
 let courseLookupInFlight = false;
 let caddieVoice = null;
+let lastGpsUiAt = 0;
+let gpsUiTimer = 0;
 
 // ==========================================
 // 2. INITIALIZATION & LISTENERS
@@ -225,6 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateLocationUI();
     updateHeroForMode();
     renderRoundHistory();
+    persistCourseMemory();
   } catch (err) {
     console.error("Startup error", err);
   }
@@ -298,6 +313,7 @@ function initVoiceEngine() {
     return;
   }
 
+  disposeRecognizer();
   recognizer = new SpeechRecognition();
   recognizer.continuous = true;
   recognizer.interimResults = false;
@@ -334,14 +350,36 @@ function initVoiceEngine() {
   speakFeedback(`G'day ${golferName()}. I'm your caddie. Listening now.`);
 }
 
-function stopVoiceEngine() {
-  voiceEnabled = false;
-  isSpeaking = false;
+function disposeRecognizer() {
+  if (!recognizer) return;
+  recognizer.onresult = null;
+  recognizer.onerror = null;
+  recognizer.onend = null;
   try {
-    recognizer?.stop();
+    recognizer.stop();
   } catch (err) {
     // Already stopped.
   }
+  recognizer = null;
+}
+
+async function releaseWakeLock() {
+  const lock = wakeLock;
+  wakeLock = null;
+  if (!lock) return;
+  try {
+    await lock.release();
+  } catch (err) {
+    // Already released.
+  }
+}
+
+function stopVoiceEngine() {
+  voiceEnabled = false;
+  isSpeaking = false;
+  disposeRecognizer();
+  releaseWakeLock();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
   updateStartButton();
   updateStatus("Standby", false);
 }
@@ -471,7 +509,9 @@ async function onPositionUpdate(position) {
     lat: position.coords.latitude,
     lng: position.coords.longitude
   };
-  updateLocationUI();
+  if (!lastGpsUiAt || locationMode === "searching" || locationMode === "unknown") {
+    updateLocationUI();
+  }
 
   try {
     await maybeRefreshCourseContext(currentPos);
@@ -494,7 +534,27 @@ async function onPositionUpdate(position) {
     updateStatus("GPS active", false);
   }
 
-  await refreshYardage();
+  scheduleGpsUi();
+}
+
+function scheduleGpsUi() {
+  const wait = lastGpsUiAt ? GPS_UI_MS - (Date.now() - lastGpsUiAt) : 0;
+  if (wait <= 0) {
+    flushGpsUi();
+    return;
+  }
+  if (gpsUiTimer) return;
+  gpsUiTimer = setTimeout(flushGpsUi, wait);
+}
+
+function flushGpsUi() {
+  if (gpsUiTimer) {
+    clearTimeout(gpsUiTimer);
+    gpsUiTimer = 0;
+  }
+  lastGpsUiAt = Date.now();
+  updateLocationUI();
+  refreshYardage();
 }
 
 async function refreshYardage() {
@@ -785,17 +845,30 @@ async function lookupCourseFromOsm(pos) {
 }
 
 function demoCourseModel() {
+  const course = getDemoCourse();
   if (DEMO_MODE === "learn") {
     return {
       name: "Totteridge Golf Course",
-      holes: DEMO_COURSE.holes.filter((hole) => !OSM_GAP_HOLES.has(hole.hole))
+      holes: course.holes.filter((hole) => !OSM_GAP_HOLES.has(hole.hole))
     };
   }
-  return { ...DEMO_COURSE };
+  return course;
 }
 
 function persistCourseMemory() {
+  const records = Object.values(courseMemoryStore);
+  if (records.length > MAX_COURSE_MEMORIES) {
+    records.sort((a, b) => newestCourseMemory(a) - newestCourseMemory(b));
+    records.slice(0, records.length - MAX_COURSE_MEMORIES).forEach((old) => {
+      if (old?.key) delete courseMemoryStore[old.key];
+    });
+  }
   saveJSON(COURSE_MEMORY_KEY, courseMemoryStore);
+}
+
+function newestCourseMemory(mem) {
+  const holes = Object.values(mem?.holes || {});
+  return holes.reduce((max, hole) => Math.max(max, Number(hole.updatedAt) || 0), 0);
 }
 
 function ensureActiveCourseMemory(pos, name) {
@@ -1214,20 +1287,21 @@ function renderHoleStrip() {
 }
 
 function buildDetectQuery(pos) {
-  return `[out:json][timeout:20];
+  return `[out:json][timeout:15];
 (
   nwr["leisure"="golf_course"](around:${DETECT_RADIUS_M},${pos.lat},${pos.lng});
-  nwr["golf"](around:${DETECT_RADIUS_M},${pos.lat},${pos.lng});
+  way["golf"="hole"](around:${DETECT_RADIUS_M},${pos.lat},${pos.lng});
+  nwr["golf"="green"](around:${DETECT_RADIUS_M},${pos.lat},${pos.lng});
 );
-out tags center 20;`;
+out tags center 12;`;
 }
 
 function buildCourseDataQuery(pos, radius) {
   return `[out:json][timeout:25];
+way["golf"="hole"](around:${radius},${pos.lat},${pos.lng})->.holes;
 (
   way["leisure"="golf_course"](around:${radius},${pos.lat},${pos.lng});
   relation["leisure"="golf_course"](around:${radius},${pos.lat},${pos.lng});
-  way["golf"="hole"](around:${radius},${pos.lat},${pos.lng});
   nwr["golf"="green"](around:${radius},${pos.lat},${pos.lng});
   node["golf"="pin"](around:${radius},${pos.lat},${pos.lng});
   nwr["golf"="bunker"](around:${radius},${pos.lat},${pos.lng});
@@ -1235,7 +1309,8 @@ function buildCourseDataQuery(pos, radius) {
   nwr["golf"="lateral_water_hazard"](around:${radius},${pos.lat},${pos.lng});
   way["natural"="water"](around:${radius},${pos.lat},${pos.lng});
 );
-out tags center geom;`;
+out tags center;
+.holes out tags center geom;`;
 }
 
 async function fetchWithTimeout(url, options, ms) {
@@ -1388,7 +1463,16 @@ function buildCourseModel(elements, pos) {
         best = hole;
       }
     }
-    if (best) best.hazards.push(haz);
+    if (best) best.hazards.push({ type: haz.type, lat: haz.lat, lng: haz.lng, _d: bestYd });
+  }
+
+  for (const hole of holeMap.values()) {
+    hole.hazards.sort((a, b) => a._d - b._d);
+    hole.hazards = hole.hazards.slice(0, MAX_HOLE_HAZARDS).map((item) => ({
+      type: item.type,
+      lat: item.lat,
+      lng: item.lng
+    }));
   }
 
   const holes = [...holeMap.values()].sort((a, b) => a.hole - b.hole);
@@ -1409,10 +1493,8 @@ function buildCourseModel(elements, pos) {
 async function requestWakeLock() {
   if (!("wakeLock" in navigator)) return;
   try {
+    await releaseWakeLock();
     wakeLock = await navigator.wakeLock.request("screen");
-    wakeLock.addEventListener("release", () => {
-      if (voiceEnabled) console.log("Screen Wake Lock released");
-    });
   } catch (err) {
     console.error(`Wake Lock Error: ${err.name}, ${err.message}`);
   }
@@ -1422,6 +1504,10 @@ document.addEventListener("visibilitychange", async () => {
   if (document.visibilityState === "visible" && voiceEnabled) {
     await requestWakeLock();
     restartRecognition();
+    return;
+  }
+  if (document.visibilityState === "hidden") {
+    await releaseWakeLock();
   }
 });
 
@@ -1489,10 +1575,6 @@ function playStyleLabel(style = playStyle()) {
   if (style === "attack") return "Attack when it's on";
   if (style === "safe") return "Protect the double";
   return "Play smart";
-}
-
-function clubWithName(name) {
-  return clubDatabase.find((club) => club.name === name) || null;
 }
 
 function longestClubFrom(clubs) {
@@ -1830,7 +1912,7 @@ function saveRoundToHistory() {
   };
 
   roundHistory.unshift(roundEntry);
-  roundHistory = roundHistory.slice(0, 20);
+  roundHistory = roundHistory.slice(0, MAX_SAVED_ROUNDS);
   saveJSON("caddie_rounds", roundHistory);
   renderRoundHistory();
 }
@@ -1978,7 +2060,7 @@ function initSpeechVoices() {
   };
   select();
   if (typeof window.speechSynthesis.addEventListener === "function") {
-    window.speechSynthesis.addEventListener("voiceschanged", select);
+    window.speechSynthesis.addEventListener("voiceschanged", select, { once: true });
   } else {
     window.speechSynthesis.onvoiceschanged = select;
   }
@@ -2061,20 +2143,14 @@ function speakFeedback(message) {
   utterance.rate = 0.98;
   utterance.pitch = voiceGenderScore(caddieVoice) < 0 ? 0.78 : 0.9;
   if (caddieVoice) utterance.voice = caddieVoice;
-  window.__lastCaddieUtterance = {
-    text: message,
-    lang: utterance.lang,
-    voiceName: caddieVoice?.name || "",
-    voiceLang: caddieVoice?.lang || ""
-  };
-  utterance.onend = () => {
+  const finishSpeech = () => {
+    utterance.onend = null;
+    utterance.onerror = null;
     isSpeaking = false;
     restartRecognition();
   };
-  utterance.onerror = () => {
-    isSpeaking = false;
-    restartRecognition();
-  };
+  utterance.onend = finishSpeech;
+  utterance.onerror = finishSpeech;
   window.speechSynthesis.speak(utterance);
 }
 
