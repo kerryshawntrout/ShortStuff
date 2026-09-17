@@ -18,13 +18,28 @@ const DEFAULT_CLUBS = [
 ];
 
 const TELEMETRY_REFRESH_MS = 25000;
-const DETECT_RADIUS_M = 220;
+const DETECT_RADIUS_M = 800;
 const COURSE_DATA_RADIUS_M = 1700;
 const COURSE_REQUERY_YD = 350;
 const COURSE_REQUERY_MS = 4 * 60 * 1000;
+const OVERPASS_TIMEOUT_MS = 10000;
 const NEARBY_PIN_YD = 2200;
 const TEE_PROXIMITY_YD = 80;
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
+  window.CaddieCourseMemory = {
+    holeNeedsGreen() { return false; },
+    holeNeedsTee() { return true; },
+    padCourseHoles(holes) { return holes || []; },
+    findCourseMemory() { return null; },
+    mergeCourseModel(model) { return model || { holes: [] }; },
+    upsertHoleMemory(memory) { return memory; },
+    memoryKey() { return "unnamed-course"; },
+    slugCourseName() { return "unnamed-course"; },
+    isGenericCourseName() { return true; }
+  };
+}
 
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
@@ -173,37 +188,46 @@ let caddieVoice = null;
 // ==========================================
 // 2. INITIALIZATION & LISTENERS
 // ==========================================
+function onElement(id, event, handler) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(event, handler);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js")
-      .then((reg) => console.log("Service Worker registered:", reg.scope))
-      .catch((err) => console.error("Service Worker registration failed:", err));
+  try {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js")
+        .then((reg) => console.log("Service Worker registered:", reg.scope))
+        .catch((err) => console.error("Service Worker registration failed:", err));
+    }
+
+    onElement("startBtn", "click", toggleVoiceCaddie);
+    onElement("markPinBtn", "click", () => markPinHere(true));
+    onElement("saveTeeBtn", "click", () => saveTeeHere(true));
+    onElement("addStrokeBtn", "click", () => addStroke(true));
+    onElement("undoStrokeBtn", "click", () => undoStroke(true));
+    onElement("nextHoleBtn", "click", () => completeHole(false, true));
+    onElement("skipHoleBtn", "click", () => completeHole(true, true));
+    onElement("finishRoundBtn", "click", () => finishRound(true));
+    onElement("askCaddieBtn", "click", speakRecommendation);
+    onElement("onCourseBtn", "click", () => setLocationOverride("course", true));
+    onElement("offCourseBtn", "click", () => setLocationOverride("home", true));
+    onElement("previewVoiceBtn", "click", previewCaddieVoice);
+    onElement("playerNameInput", "change", onNameInputChange);
+    onElement("playerNameInput", "blur", onNameInputChange);
+    onElement("handicapInput", "change", onHandicapInputChange);
+    onElement("handicapInput", "blur", onHandicapInputChange);
+
+    initSpeechVoices();
+    updateProfileUI();
+    updateScoreUI();
+    updatePinUI();
+    updateLocationUI();
+    updateHeroForMode();
+    renderRoundHistory();
+  } catch (err) {
+    console.error("Startup error", err);
   }
-
-  document.getElementById("startBtn").addEventListener("click", toggleVoiceCaddie);
-  document.getElementById("markPinBtn").addEventListener("click", () => markPinHere(true));
-  document.getElementById("saveTeeBtn").addEventListener("click", () => saveTeeHere(true));
-  document.getElementById("addStrokeBtn").addEventListener("click", () => addStroke(true));
-  document.getElementById("undoStrokeBtn").addEventListener("click", () => undoStroke(true));
-  document.getElementById("nextHoleBtn").addEventListener("click", () => completeHole(false, true));
-  document.getElementById("skipHoleBtn").addEventListener("click", () => completeHole(true, true));
-  document.getElementById("finishRoundBtn").addEventListener("click", () => finishRound(true));
-  document.getElementById("askCaddieBtn").addEventListener("click", speakRecommendation);
-  document.getElementById("onCourseBtn").addEventListener("click", () => setLocationOverride("course", true));
-  document.getElementById("offCourseBtn").addEventListener("click", () => setLocationOverride("home", true));
-  document.getElementById("previewVoiceBtn").addEventListener("click", previewCaddieVoice);
-  document.getElementById("playerNameInput").addEventListener("change", onNameInputChange);
-  document.getElementById("playerNameInput").addEventListener("blur", onNameInputChange);
-  document.getElementById("handicapInput").addEventListener("change", onHandicapInputChange);
-  document.getElementById("handicapInput").addEventListener("blur", onHandicapInputChange);
-
-  initSpeechVoices();
-  updateProfileUI();
-  updateScoreUI();
-  updatePinUI();
-  updateLocationUI();
-  updateHeroForMode();
-  renderRoundHistory();
   startGpsWatch();
 });
 
@@ -243,25 +267,25 @@ function startGpsWatch() {
     return;
   }
 
-  watchId = navigator.geolocation.watchPosition(
-    (position) => {
-      lastGpsErrorCode = null;
-      onPositionUpdate(position);
-    },
-    (err) => {
-      lastGpsErrorCode = err.code;
-      console.error("GPS Error:", err);
-      const denied = err.code === err.PERMISSION_DENIED;
-      updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", voiceEnabled, denied);
-      if (denied) {
-        locationMode = "unknown";
-        updateLocationUI("Location permission denied. Scorekeeping still works. Enable GPS to detect a golf course.");
-        updateHeroForMode();
-        updatePinUI();
-      }
-    },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 3000 }
-  );
+  const onFix = (position) => {
+    lastGpsErrorCode = null;
+    onPositionUpdate(position);
+  };
+  const onGpsError = (err) => {
+    lastGpsErrorCode = err.code;
+    console.error("GPS Error:", err);
+    const denied = err.code === err.PERMISSION_DENIED;
+    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", voiceEnabled, denied);
+    if (denied) {
+      locationMode = "unknown";
+      updateLocationUI("Location permission denied. Scorekeeping still works. Enable GPS to detect a golf course.");
+      updateHeroForMode();
+      updatePinUI();
+    }
+  };
+  const gpsOptions = { enableHighAccuracy: true, timeout: 25000, maximumAge: 15000 };
+  navigator.geolocation.getCurrentPosition(onFix, onGpsError, gpsOptions);
+  watchId = navigator.geolocation.watchPosition(onFix, onGpsError, gpsOptions);
 }
 
 // ==========================================
@@ -447,8 +471,18 @@ async function onPositionUpdate(position) {
     lat: position.coords.latitude,
     lng: position.coords.longitude
   };
+  updateLocationUI();
 
-  await maybeRefreshCourseContext(currentPos);
+  try {
+    await maybeRefreshCourseContext(currentPos);
+  } catch (err) {
+    console.error("Course lookup failed", err);
+    if (locationMode === "searching") {
+      locationMode = "unknown";
+      updateLocationUI("GPS is on, but the course map did not load. Tap I'm on a course if you're playing.");
+      updateHeroForMode();
+    }
+  }
 
   if (voiceEnabled) {
     updateStatus("Voice listening active", true);
@@ -456,7 +490,7 @@ async function onPositionUpdate(position) {
     updateStatus("On course", false);
   } else if (locationMode === "home") {
     updateStatus("At home", false);
-  } else if (targetPin) {
+  } else if (currentPos) {
     updateStatus("GPS active", false);
   }
 
@@ -1055,6 +1089,11 @@ function inferHoleFromPosition(pos, holes) {
   return best;
 }
 
+function gpsFixLabel(pos = currentPos) {
+  if (!pos || !Number.isFinite(pos.lat) || !Number.isFinite(pos.lng)) return "";
+  return ` GPS ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}.`;
+}
+
 function updateLocationUI(detail) {
   const card = document.getElementById("locationCard");
   const nameEl = document.getElementById("courseName");
@@ -1063,11 +1102,12 @@ function updateLocationUI(detail) {
 
   card.classList.remove("searching", "home", "course");
   const demoNote = DEMO_MODE ? " Demo location is on." : "";
+  const gpsNote = gpsFixLabel();
 
   if (locationMode === "home") {
     card.classList.add("home");
     nameEl.innerText = "At home / off course";
-    detailEl.innerText = (detail || "No golf course around this GPS point. Keep score here; yardage starts when you arrive at a mapped course.") + demoNote;
+    detailEl.innerText = (detail || "No golf course around this GPS point. Keep score here; yardage starts when you arrive at a mapped course.") + gpsNote + demoNote;
   } else if (locationMode === "course") {
     card.classList.add("course");
     const mapped = holeByNumber(currentHole);
@@ -1091,7 +1131,7 @@ function updateLocationUI(detail) {
   } else {
     card.classList.add("searching");
     nameEl.innerText = locationMode === "unknown" ? "Location unclear" : "Locating you…";
-    detailEl.innerText = (detail || "Checking GPS for a nearby golf course. At home you can keep score without setting a pin.") + demoNote;
+    detailEl.innerText = (detail || "Checking GPS for a nearby golf course. At home you can keep score without setting a pin.") + gpsNote + demoNote;
   }
 
   updateMarkPinButton();
@@ -1198,14 +1238,24 @@ function buildCourseDataQuery(pos, radius) {
 out tags center geom;`;
 }
 
+async function fetchWithTimeout(url, options, ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function queryOverpass(ql) {
   for (const url of OVERPASS_ENDPOINTS) {
     try {
-      const res = await fetch(url, {
+      const res = await fetchWithTimeout(url, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: "data=" + encodeURIComponent(ql)
-      });
+      }, OVERPASS_TIMEOUT_MS);
       if (!res.ok) continue;
       const data = await res.json();
       if (data && Array.isArray(data.elements)) return data;
