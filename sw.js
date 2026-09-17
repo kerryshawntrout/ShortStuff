@@ -1,4 +1,4 @@
-const CACHE_NAME = "caddie-v9";
+const CACHE_NAME = "caddie-v10";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -45,15 +45,23 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response && response.status === 200 && response.type === "basic") {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html")))
-  );
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(event.request);
+      if (response && response.status === 200 && response.type === "basic") {
+        const copy = response.clone();
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(event.request, copy);
+      }
+      return response;
+    } catch (err) {
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+      const dest = event.request.destination;
+      if (event.request.mode === "navigate" || dest === "document") {
+        return (await caches.match("./index.html")) || Response.error();
+      }
+      return new Response("", { status: 504, statusText: "Offline" });
+    }
+  })());
 });
