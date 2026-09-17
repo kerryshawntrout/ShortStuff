@@ -52,6 +52,26 @@ h1 {
   color: var(--accent-green);
 }
 
+.header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-version {
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent-gold);
+  background: rgba(241, 196, 15, 0.12);
+  border: 1px solid rgba(241, 196, 15, 0.45);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
 .status-badge {
   font-size: 0.8rem;
   padding: 4px 10px;

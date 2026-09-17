@@ -1,4 +1,4 @@
-const CACHE_NAME = "caddie-v11";
+const CACHE_NAME = "caddie-v12";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",

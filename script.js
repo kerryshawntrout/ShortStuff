@@ -29,6 +29,7 @@ const GPS_UI_MS = 800;
 const MAX_COURSE_MEMORIES = 6;
 const MAX_HOLE_HAZARDS = 6;
 const MAX_SAVED_ROUNDS = 12;
+const APP_VERSION = "v12";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
@@ -233,6 +234,11 @@ document.addEventListener("DOMContentLoaded", () => {
     onElement("handicapInput", "blur", onHandicapInputChange);
 
     initSpeechVoices();
+    const versionEl = document.getElementById("appVersion");
+    if (versionEl) {
+      versionEl.textContent = APP_VERSION;
+      versionEl.setAttribute("aria-label", `App version ${APP_VERSION}`);
+    }
     updateProfileUI();
     updateScoreUI();
     updatePinUI();
