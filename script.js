@@ -26,10 +26,11 @@ const OVERPASS_TIMEOUT_MS = 10000;
 const NEARBY_PIN_YD = 2200;
 const TEE_PROXIMITY_YD = 80;
 const GPS_UI_MS = 800;
+const RESUME_DEBOUNCE_MS = 800;
 const MAX_COURSE_MEMORIES = 6;
 const MAX_HOLE_HAZARDS = 6;
 const MAX_SAVED_ROUNDS = 12;
-const APP_VERSION = "v12";
+const APP_VERSION = "v13";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
@@ -199,6 +200,7 @@ let courseLookupInFlight = false;
 let caddieVoice = null;
 let lastGpsUiAt = 0;
 let gpsUiTimer = 0;
+let lastResumeAt = 0;
 
 // ==========================================
 // 2. INITIALIZATION & LISTENERS
@@ -267,8 +269,9 @@ async function initCaddie() {
   initVoiceEngine();
 }
 
-function startGpsWatch() {
+function startGpsWatch(options = {}) {
   if (watchId !== null) return;
+  lastResumeAt = Date.now();
 
   const demoPos = DEMO_POSITIONS[DEMO_MODE] || (DEMO_MODE === "learn" ? DEMO_POSITIONS.learn : null);
   if (demoPos) {
@@ -304,9 +307,49 @@ function startGpsWatch() {
       updatePinUI();
     }
   };
-  const gpsOptions = { enableHighAccuracy: true, timeout: 25000, maximumAge: 15000 };
+  const gpsOptions = {
+    enableHighAccuracy: true,
+    timeout: 25000,
+    maximumAge: options.fresh ? 0 : 15000
+  };
   navigator.geolocation.getCurrentPosition(onFix, onGpsError, gpsOptions);
   watchId = navigator.geolocation.watchPosition(onFix, onGpsError, gpsOptions);
+}
+
+function stopGpsWatch() {
+  if (watchId != null && watchId !== "demo") {
+    try {
+      navigator.geolocation.clearWatch(watchId);
+    } catch (err) {
+      // Watch already gone.
+    }
+  }
+  watchId = null;
+}
+
+function restartGpsWatch(options = {}) {
+  stopGpsWatch();
+  startGpsWatch(options);
+}
+
+function shouldForceCourseLookup(mode = locationMode, override = locationOverride) {
+  if (override === "home") return false;
+  return mode !== "course";
+}
+
+function resumeLocation() {
+  const now = Date.now();
+  if (now - lastResumeAt < RESUME_DEBOUNCE_MS) return;
+  lastResumeAt = now;
+  courseLookupInFlight = false;
+  if (shouldForceCourseLookup()) {
+    lastCourseQueryAt = 0;
+    lastCourseQueryPos = null;
+    if (locationMode !== "course" && locationOverride !== "home") {
+      updateLocationUI("Checking GPS again after coming back. If you're playing, tap I'm on a course.");
+    }
+  }
+  restartGpsWatch({ fresh: true });
 }
 
 // ==========================================
@@ -1507,14 +1550,20 @@ async function requestWakeLock() {
 }
 
 document.addEventListener("visibilitychange", async () => {
-  if (document.visibilityState === "visible" && voiceEnabled) {
-    await requestWakeLock();
-    restartRecognition();
-    return;
-  }
   if (document.visibilityState === "hidden") {
     await releaseWakeLock();
+    return;
   }
+  if (document.visibilityState !== "visible") return;
+  resumeLocation();
+  if (voiceEnabled) {
+    await requestWakeLock();
+    restartRecognition();
+  }
+});
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) resumeLocation();
 });
 
 // ==========================================
@@ -2173,7 +2222,9 @@ window.CaddieStrategy = {
   playStyleLabel,
   clubDownFromDriver,
   migrateClubBag,
-  isOldFactoryBag
+  isOldFactoryBag,
+  shouldForceCourseLookup,
+  resumeLocation
 };
 
 function calculateHaversineDistanceYards(pos1, pos2) {
