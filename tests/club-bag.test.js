@@ -33,6 +33,32 @@ const ironIndex = stock.findIndex((club) => club.name === "5-Iron");
 const removed = Bag.removeClubFromBag(stock, ironIndex);
 assert.strictEqual(removed.ok, true);
 assert.ok(!removed.clubs.some((club) => club.name === "5-Iron"));
+assert.strictEqual(removed.removed, "5-Iron");
+assert.ok(removed.bench.some((club) => club.name === "5-Iron" && club.distance === 180));
+
+const restored = Bag.restoreClubFromBench(removed.clubs, removed.bench, "5-Iron");
+assert.strictEqual(restored.ok, true);
+assert.strictEqual(restored.restored, true);
+assert.ok(restored.clubs.some((club) => club.name === "5-Iron" && club.distance === 180));
+assert.ok(!restored.bench.some((club) => club.name === "5-Iron"));
+
+const tuned = Bag.cloneClubs(stock);
+tuned[ironIndex].distance = 175;
+tuned[ironIndex].hits = 4;
+const parked = Bag.removeClubFromBag(tuned, ironIndex);
+const byName = Bag.addClubToBag(parked.clubs, "5-iron", "", parked.bench);
+assert.strictEqual(byName.ok, true);
+assert.strictEqual(byName.restored, true);
+const five = byName.clubs.find((club) => club.name === "5-Iron");
+assert.strictEqual(five.distance, 175);
+assert.strictEqual(five.hits, 4);
+assert.strictEqual(byName.bench.length, 0);
+
+const parkedAgain = Bag.removeClubFromBag(byName.clubs, byName.clubs.findIndex((club) => club.name === "5-Iron"), byName.bench);
+const overrideYards = Bag.addClubToBag(parkedAgain.clubs, "5-Iron", 168, parkedAgain.bench);
+assert.strictEqual(overrideYards.ok, true);
+assert.strictEqual(overrideYards.clubs.find((club) => club.name === "5-Iron").distance, 168);
+assert.ok(!overrideYards.bench.some((club) => club.name === "5-Iron"));
 
 const tiny = [
   { name: "Driver", distance: 220, hits: 0 },
@@ -43,10 +69,12 @@ const tooFew = Bag.removeClubFromBag(tiny, 1);
 assert.strictEqual(tooFew.ok, false);
 assert.strictEqual(tooFew.clubs.length, 3);
 
-const reset = Bag.resetClubBag();
+const reset = Bag.resetClubBag([{ name: "5-Iron", distance: 175, hits: 2 }, { name: "4-Hybrid", distance: 185, hits: 1 }]);
 assert.strictEqual(reset.clubs.length, 13);
 assert.strictEqual(reset.clubs[0].name, "Driver");
 assert.strictEqual(reset.clubs[0].distance, 220);
+assert.ok(!reset.bench.some((club) => club.name === "5-Iron"));
+assert.ok(reset.bench.some((club) => club.name === "4-Hybrid" && club.distance === 185));
 
 const noPw = stock.filter((club) => !/pitching|gap wedge/i.test(club.name));
 const wedge = Bag.layupWedgeFrom(noPw);

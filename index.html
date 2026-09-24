@@ -42,8 +42,13 @@
 
     <section class="profile-card bag-card">
       <h3>Your bag</h3>
-      <p class="voice-status">Carry yards. The caddie picks from this list. 3–16 clubs, 40–320 yards.</p>
+      <p class="voice-status">Carry yards. The caddie picks from this list. Remove a club and its yards stay if you add it back. 3–16 clubs, 40–320 yards.</p>
       <div id="bagList" class="bag-list"></div>
+      <div id="bagBench" class="bag-bench hidden">
+        <p class="metric-label">Out of the bag</p>
+        <p class="voice-status">Yards stay here. Add a club back to use it again.</p>
+        <div id="bagBenchList" class="bag-list"></div>
+      </div>
       <div class="bag-add">
         <label class="metric-label" for="newClubName">Add club</label>
         <input id="newClubName" type="text" maxlength="18" spellcheck="false" autocomplete="off" placeholder="4-Hybrid" aria-label="New club name">
@@ -143,7 +148,7 @@
         <li><strong>"Okay Caddie" / "Distance"</strong> <span>Get club &amp; target advice</span></li>
         <li><strong>"Good shot" / "Hit green"</strong> <span>Log hit &amp; add 1 stroke</span></li>
         <li><strong>"Came up short" / "Flew long"</strong> <span>Tune club yardages</span></li>
-        <li><strong>Your bag</strong> <span>Add, remove, or change clubs and carry yards before the round</span></li>
+        <li><strong>Your bag</strong> <span>Add, remove, or change clubs. Removed clubs keep their yards if you add them back.</span></li>
       </ul>
     </section>
   </div>

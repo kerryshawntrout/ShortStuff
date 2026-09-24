@@ -10,10 +10,13 @@ if (typeof window !== "undefined" && !window.CaddieBag) {
     MAX_CLUB_YARDS: 320,
     MAX_CLUB_NAME_LEN: 18,
     cloneClubs(clubs) { return clubs || []; },
-    addClubToBag(clubs) { return { ok: false, error: "Bag helper missing.", clubs: clubs || [] }; },
-    updateClubInBag(clubs) { return { ok: false, error: "Bag helper missing.", clubs: clubs || [] }; },
-    removeClubFromBag(clubs) { return { ok: false, error: "Bag helper missing.", clubs: clubs || [] }; },
-    resetClubBag() { return { ok: false, error: "Bag helper missing.", clubs: [] }; },
+    addClubToBag(clubs) { return { ok: false, error: "Bag helper missing.", clubs: clubs || [], bench: [] }; },
+    updateClubInBag(clubs) { return { ok: false, error: "Bag helper missing.", clubs: clubs || [], bench: [] }; },
+    removeClubFromBag(clubs) { return { ok: false, error: "Bag helper missing.", clubs: clubs || [], bench: [] }; },
+    restoreClubFromBench(clubs, bench) { return { ok: false, error: "Bag helper missing.", clubs: clubs || [], bench: bench || [] }; },
+    findOnBench() { return null; },
+    sortBag(clubs) { return clubs || []; },
+    resetClubBag() { return { ok: false, error: "Bag helper missing.", clubs: [], bench: [] }; },
     longestClubFrom() { return { name: "Driver", distance: 220 }; },
     clubDownFromDriver() { return { name: "5-Wood", distance: 210 }; },
     layupWedgeFrom() { return { name: "Pitching Wedge", distance: 125 }; }
@@ -71,6 +74,7 @@ const DEMO_POSITIONS = {
 };
 const OSM_GAP_HOLES = new Set([5, 6, 7, 16]);
 const COURSE_MEMORY_KEY = "caddie_course_memory";
+const CLUB_BENCH_KEY = "caddie_clubs_bench";
 
 function getDemoCourse() {
   return {
@@ -156,7 +160,13 @@ function loadClubDatabase() {
   return Bag.sortBag(cloneClubs(stored));
 }
 
+function loadClubBench() {
+  const stored = loadJSON(CLUB_BENCH_KEY, []);
+  return Array.isArray(stored) ? Bag.sortBag(stored) : [];
+}
+
 let clubDatabase = loadClubDatabase();
+let clubBench = loadClubBench();
 let playerProfile = loadJSON("caddie_profile", {
   name: "Kerry",
   handicap: 14,
@@ -249,6 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     onElement("newClubYards", "keydown", (event) => {
       if (event.key === "Enter") onAddClub();
     });
+    onElement("newClubName", "blur", onNewClubNameBlur);
 
     initSpeechVoices();
     const versionEl = document.getElementById("appVersion");
@@ -2033,9 +2044,11 @@ function setBagStatus(text, isError) {
   el.classList.toggle("bag-status-error", Boolean(isError));
 }
 
-function persistClubBag(next, message, isError) {
+function persistClubBag(next, bench, message, isError) {
   clubDatabase = Bag.sortBag(next);
+  clubBench = Bag.sortBag(bench || []);
   saveJSON("caddie_clubs", clubDatabase);
+  saveJSON(CLUB_BENCH_KEY, clubBench);
   renderBagEditor();
   setBagStatus(message || "", Boolean(isError));
   if (currentPos && targetPin) refreshYardage();
@@ -2078,26 +2091,50 @@ function renderBagEditor() {
     del.type = "button";
     del.className = "score-btn danger bag-delete";
     del.textContent = "Remove";
-    del.setAttribute("aria-label", `Remove ${club.name}`);
+    del.setAttribute("aria-label", `Remove ${club.name} from bag`);
     del.addEventListener("click", () => onBagRemove(index));
 
     row.append(name, yards, unit, del);
     listEl.appendChild(row);
   });
+  renderClubBench();
+}
+
+function renderClubBench() {
+  const wrap = document.getElementById("bagBench");
+  const listEl = document.getElementById("bagBenchList");
+  if (!wrap || !listEl) return;
+  listEl.replaceChildren();
+  wrap.classList.toggle("hidden", clubBench.length === 0);
+  clubBench.forEach((club) => {
+    const row = document.createElement("div");
+    row.className = "bag-row bag-bench-row";
+    const label = document.createElement("span");
+    label.className = "bag-bench-name";
+    label.textContent = `${club.name} · ${club.distance} yd`;
+    const addBack = document.createElement("button");
+    addBack.type = "button";
+    addBack.className = "score-btn bag-add-back";
+    addBack.textContent = "Add back";
+    addBack.setAttribute("aria-label", `Add ${club.name} back to bag`);
+    addBack.addEventListener("click", () => onBagRestore(club.name));
+    row.append(label, addBack);
+    listEl.appendChild(row);
+  });
 }
 
 function onBagNameChange(index, value) {
-  const result = Bag.updateClubInBag(clubDatabase, index, { name: value });
+  const result = Bag.updateClubInBag(clubDatabase, index, { name: value }, clubBench);
   if (!result.ok) {
     setBagStatus(result.error, true);
     renderBagEditor();
     return;
   }
-  persistClubBag(result.clubs, `Updated ${Bag.normalizeClubName(value)}.`);
+  persistClubBag(result.clubs, result.bench, `Updated ${Bag.normalizeClubName(value)}.`);
 }
 
 function onBagYardsChange(index, value) {
-  const result = Bag.updateClubInBag(clubDatabase, index, { distance: value });
+  const result = Bag.updateClubInBag(clubDatabase, index, { distance: value }, clubBench);
   if (!result.ok) {
     setBagStatus(result.error, true);
     renderBagEditor();
@@ -2105,35 +2142,57 @@ function onBagYardsChange(index, value) {
   }
   const club = result.clubs.find((item) => item.name === clubDatabase[index]?.name)
     || result.clubs[0];
-  persistClubBag(result.clubs, `${club?.name || "Club"} set to ${club?.distance} yd.`);
+  persistClubBag(result.clubs, result.bench, `${club?.name || "Club"} set to ${club?.distance} yd.`);
 }
 
 function onBagRemove(index) {
   const name = clubDatabase[index]?.name;
-  const result = Bag.removeClubFromBag(clubDatabase, index);
+  const result = Bag.removeClubFromBag(clubDatabase, index, clubBench);
   if (!result.ok) {
     setBagStatus(result.error, true);
     return;
   }
-  persistClubBag(result.clubs, `Removed ${result.removed || name}.`);
+  persistClubBag(result.clubs, result.bench, `Removed ${result.removed || name}. Yards kept if you add it back.`);
+}
+
+function onBagRestore(name) {
+  const result = Bag.restoreClubFromBench(clubDatabase, clubBench, name);
+  if (!result.ok) {
+    setBagStatus(result.error, true);
+    return;
+  }
+  persistClubBag(result.clubs, result.bench, `Added ${result.added} back at ${result.clubs.find((c) => c.name === result.added)?.distance} yd.`);
+}
+
+function onNewClubNameBlur() {
+  const nameEl = document.getElementById("newClubName");
+  const yardsEl = document.getElementById("newClubYards");
+  if (!nameEl || !yardsEl || yardsEl.value) return;
+  const remembered = Bag.findOnBench(clubBench, nameEl.value);
+  if (remembered) yardsEl.value = String(remembered.distance);
 }
 
 function onAddClub() {
   const nameEl = document.getElementById("newClubName");
   const yardsEl = document.getElementById("newClubYards");
-  const result = Bag.addClubToBag(clubDatabase, nameEl?.value, yardsEl?.value);
+  const result = Bag.addClubToBag(clubDatabase, nameEl?.value, yardsEl?.value, clubBench);
   if (!result.ok) {
     setBagStatus(result.error, true);
     return;
   }
   if (nameEl) nameEl.value = "";
   if (yardsEl) yardsEl.value = "";
-  persistClubBag(result.clubs, `Added ${result.added}.`);
+  persistClubBag(
+    result.clubs,
+    result.bench,
+    result.restored ? `Added ${result.added} back with saved yards.` : `Added ${result.added}.`
+  );
 }
 
 function onResetBag() {
   if (!window.confirm("Reset the bag to Driver through Lob Wedge with stock yards?")) return;
-  persistClubBag(Bag.resetClubBag().clubs, "Bag reset to stock clubs.");
+  const result = Bag.resetClubBag(clubBench);
+  persistClubBag(result.clubs, result.bench, "Bag reset to stock clubs.");
 }
 
 function getBestClub(yards, options = {}) {
@@ -2340,6 +2399,7 @@ window.CaddieStrategy = {
   isOldFactoryBag,
   shouldForceCourseLookup,
   resumeLocation,
+  restoreClubFromBench: Bag.restoreClubFromBench,
   addClubToBag: Bag.addClubToBag,
   updateClubInBag: Bag.updateClubInBag,
   removeClubFromBag: Bag.removeClubFromBag,
