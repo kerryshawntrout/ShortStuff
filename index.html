@@ -22,7 +22,7 @@
     <header>
       <div class="header-title">
         <h1>AI Caddie & Scorekeeper</h1>
-        <span id="appVersion" class="app-version" aria-label="App version v13">v13</span>
+        <span id="appVersion" class="app-version" aria-label="App version v14">v14</span>
       </div>
       <div id="status" class="status-badge">Standby</div>
     </header>
@@ -38,6 +38,21 @@
       <p id="planStatus" class="voice-status">Play style: Smart</p>
       <p id="voiceStatus" class="voice-status">Looking for an Australian male voice…</p>
       <button id="previewVoiceBtn" class="score-btn" type="button">Hear caddie voice</button>
+    </section>
+
+    <section class="profile-card bag-card">
+      <h3>Your bag</h3>
+      <p class="voice-status">Carry yards. The caddie picks from this list. 3–16 clubs, 40–320 yards.</p>
+      <div id="bagList" class="bag-list"></div>
+      <div class="bag-add">
+        <label class="metric-label" for="newClubName">Add club</label>
+        <input id="newClubName" type="text" maxlength="18" spellcheck="false" autocomplete="off" placeholder="4-Hybrid" aria-label="New club name">
+        <label class="metric-label" for="newClubYards">Yards</label>
+        <input id="newClubYards" type="number" min="40" max="320" step="1" inputmode="numeric" placeholder="185" aria-label="New club yards">
+        <button id="addClubBtn" class="score-btn" type="button">Add club</button>
+      </div>
+      <p id="bagStatus" class="voice-status"></p>
+      <button id="resetBagBtn" class="score-btn danger" type="button">Reset bag</button>
     </section>
 
     <section id="locationCard" class="location-card searching">
@@ -128,11 +143,13 @@
         <li><strong>"Okay Caddie" / "Distance"</strong> <span>Get club &amp; target advice</span></li>
         <li><strong>"Good shot" / "Hit green"</strong> <span>Log hit &amp; add 1 stroke</span></li>
         <li><strong>"Came up short" / "Flew long"</strong> <span>Tune club yardages</span></li>
+        <li><strong>Your bag</strong> <span>Add, remove, or change clubs and carry yards before the round</span></li>
       </ul>
     </section>
   </div>
 
   <script src="course-memory.js"></script>
+  <script src="club-bag.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@ A lightweight, hands-free Progressive Web App that recommends clubs from GPS yar
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
 * **Hands-free voice assistant:** Listens for commands like `"okay caddie"`, `"add stroke"`, `"next hole"`, and `"hole 7"`.
 * **Australian male caddie voice:** Speaks with an `en-AU` male voice when the phone has one installed, and uses the golfer's name in conversation.
-* **Course strategy:** Uses handicap, hole par, and mapped hazards to choose conservative vs aggressive plays: club-down on short par 4s, lay up on long par 5s, extra club over trouble, and miss to the fat of the green.
+* **Editable bag:** Add, remove, or change clubs and carry yards on the phone. The caddie picks from that list.
 * **On-screen scorekeeping:** Tap controls work even when the microphone is unavailable.
 * **Round memory:** In-progress rounds survive a refresh; finished rounds are stored locally.
 * **Offline app shell:** Service worker caches the UI so the scorekeeper still loads without signal.
@@ -48,6 +48,7 @@ virtual-golf-caddie/
 ├── styles.css        # High-contrast outdoor UI
 ├── script.js         # GPS, APIs, voice, scoring
 ├── course-memory.js  # Holes taught on-round, stored on the phone
+├── club-bag.js       # Add/remove/edit clubs and carry yards
 ├── sw.js             # Offline cache
 ├── manifest.json     # PWA install metadata
 └── aii.png           # App icon

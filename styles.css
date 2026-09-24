@@ -127,7 +127,8 @@ h1 {
 .voice-guide-card,
 .controls-card,
 .location-card,
-.profile-card {
+.profile-card,
+.bag-card {
   background: var(--card-bg);
   border-radius: 16px;
   padding: 20px;
@@ -372,6 +373,47 @@ h1 {
 .profile-card input:focus {
   outline: 2px solid var(--accent-green);
   border-color: var(--accent-green);
+}
+
+.bag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.bag-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 28px minmax(76px, auto);
+  gap: 8px;
+  align-items: center;
+}
+
+.bag-card .bag-row input {
+  width: 100%;
+  margin: 0;
+  min-height: 44px;
+}
+
+.bag-yd {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.bag-delete {
+  padding: 10px 8px;
+  font-size: 0.82rem;
+}
+
+.bag-add {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.bag-status-error {
+  color: #ff8a80;
 }
 
 .voice-status {
