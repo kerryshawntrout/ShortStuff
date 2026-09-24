@@ -295,6 +295,7 @@ def build():
         "<b>Handicap</b> defaults to 14. Set your real number. This is not vanity — it changes strategy.",
         "Handicap 0–8: more aggressive when the shot is on. 9–18: play smart (club down, lay up, fat of the green). 19+: protect the double.",
         "You can also say “handicap 14”.",
+        "<b>Your bag</b> is the list of clubs and carry yards under Your caddie. Add, remove, or change a number there. The caddie only recommends clubs from that list. Remove takes a club out of play but keeps its yards; add the same name back (or tap Add back) to restore it. Reset bag restores Driver through Lob Wedge.",
     ], styles))
     story.append(callout(
         "<b>Why handicap matters.</b> A 14-handicap on a 273-yard par 4 should hear “5-wood, leave a wedge,” not “hit driver at the flag.” A 5-handicap can take more risk. Put in the number you actually play to.",
@@ -423,6 +424,7 @@ def build():
     story.append(Paragraph("8. Training your bag", styles["H1"]))
     story.append(Paragraph(
         "The stock bag is Kerry’s: driver 220, 5-wood 210, 7-wood 200, 3-hybrid 190, then irons and wedges. "
+        "Remove a club if you are not carrying it; the yards stay on the phone so adding it back restores the number. "
         "“Came up short” / “flew long” still tune those numbers after real shots.",
         styles["Body"]
     ))

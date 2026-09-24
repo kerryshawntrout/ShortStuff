@@ -127,7 +127,8 @@ h1 {
 .voice-guide-card,
 .controls-card,
 .location-card,
-.profile-card {
+.profile-card,
+.bag-card {
   background: var(--card-bg);
   border-radius: 16px;
   padding: 20px;
@@ -372,6 +373,80 @@ h1 {
 .profile-card input:focus {
   outline: 2px solid var(--accent-green);
   border-color: var(--accent-green);
+}
+
+.bag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.bag-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(84px, auto);
+  grid-template-areas:
+    "name name name"
+    "yards unit delete";
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bag-card .bag-row input {
+  width: 100%;
+  margin: 0;
+  min-height: 44px;
+}
+
+.bag-name { grid-area: name; }
+.bag-yards { grid-area: yards; }
+.bag-yd {
+  grid-area: unit;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.bag-delete {
+  grid-area: delete;
+  padding: 10px 8px;
+  font-size: 0.82rem;
+}
+
+.bag-add {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.bag-bench {
+  margin: 0 0 14px;
+}
+
+.bag-bench-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name add";
+}
+
+.bag-bench-name {
+  grid-area: name;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.bag-add-back {
+  grid-area: add;
+  width: auto;
+  min-width: 88px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.bag-status-error {
+  color: #ff8a80;
 }
 
 .voice-status {
