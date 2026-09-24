@@ -2050,6 +2050,7 @@ function renderBagEditor() {
     row.className = "bag-row";
 
     const name = document.createElement("input");
+    name.className = "bag-name";
     name.type = "text";
     name.maxLength = MAX_CLUB_NAME_LEN;
     name.value = club.name;
@@ -2059,6 +2060,7 @@ function renderBagEditor() {
     name.addEventListener("change", () => onBagNameChange(index, name.value));
 
     const yards = document.createElement("input");
+    yards.className = "bag-yards";
     yards.type = "number";
     yards.min = String(MIN_CLUB_YARDS);
     yards.max = String(MAX_CLUB_YARDS);

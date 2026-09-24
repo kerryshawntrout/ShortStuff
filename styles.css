@@ -384,9 +384,14 @@ h1 {
 
 .bag-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 72px 28px minmax(76px, auto);
+  grid-template-columns: minmax(0, 1fr) 28px minmax(84px, auto);
+  grid-template-areas:
+    "name name name"
+    "yards unit delete";
   gap: 8px;
   align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .bag-card .bag-row input {
@@ -395,13 +400,16 @@ h1 {
   min-height: 44px;
 }
 
+.bag-name { grid-area: name; }
+.bag-yards { grid-area: yards; }
 .bag-yd {
+  grid-area: unit;
   color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 700;
 }
-
 .bag-delete {
+  grid-area: delete;
   padding: 10px 8px;
   font-size: 0.82rem;
 }
