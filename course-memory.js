@@ -1,4 +1,4 @@
-// Local course memory: holes Kerry teaches on-round, stored on this phone.
+// Local course memory: holes Kerry teaches on-round, plus OSM nines that share 1–9.
 (function (root) {
   const GENERIC_NAMES = new Set([
     "unmapped course",
@@ -174,6 +174,104 @@
     return !hole || !clonePoint(hole.green);
   }
 
+  function holeLoopName(hole) {
+    const tagged = String(hole?.courseName || "").replace(/\s+/g, " ").trim();
+    if (tagged) return tagged;
+    const name = String(hole?.name || "").replace(/\s+/g, " ").trim();
+    if (!name) return "";
+    return name.replace(/\s+\d{1,2}$/, "").trim();
+  }
+
+  function courseNameForLoop(courseName, loopName) {
+    const course = String(courseName || "").replace(/\s+/g, " ").trim();
+    const loop = String(loopName || "").replace(/\s+/g, " ").trim();
+    if (!loop) return course || "Golf course";
+    if (!course) return loop;
+    const c = course.toLowerCase();
+    const l = loop.toLowerCase();
+    if (c.includes(l) || l.includes(c)) return course;
+    return loop;
+  }
+
+  function nearestHoleYards(pos, hole) {
+    return Math.min(
+      distanceYards(pos, hole?.tee),
+      distanceYards(pos, hole?.green),
+      distanceYards(pos, hole?.center),
+      distanceYards(pos, hole?.pin)
+    );
+  }
+
+  function collapseHolesByNumber(holes, pos) {
+    const map = new Map();
+    for (const hole of holes || []) {
+      const n = Number(hole?.hole);
+      if (!Number.isInteger(n)) continue;
+      const prev = map.get(n);
+      if (!prev) {
+        map.set(n, hole);
+        continue;
+      }
+      if (pos && nearestHoleYards(pos, hole) < nearestHoleYards(pos, prev)) {
+        map.set(n, hole);
+      }
+    }
+    return [...map.values()].sort((a, b) => a.hole - b.hole);
+  }
+
+  function selectHolesByLoop(holes, pos) {
+    const list = (holes || []).filter((hole) => Number.isInteger(Number(hole?.hole)));
+    if (!list.length) return { holes: [], loopName: "" };
+
+    const groups = new Map();
+    for (const hole of list) {
+      const display = holeLoopName(hole);
+      const key = display.toLowerCase();
+      if (!groups.has(key)) groups.set(key, { name: display, holes: [] });
+      const group = groups.get(key);
+      if (!group.name && display) group.name = display;
+      group.holes.push(hole);
+    }
+
+    const groupList = [...groups.values()];
+    const seenRefs = new Map();
+    let collision = false;
+    for (const group of groupList) {
+      const used = new Set();
+      for (const hole of group.holes) {
+        const n = Number(hole.hole);
+        if (used.has(n)) continue;
+        used.add(n);
+        if (seenRefs.has(n)) collision = true;
+        else seenRefs.set(n, group);
+      }
+    }
+
+    if (!collision || groupList.length === 1) {
+      const loopName = groupList.length === 1 ? groupList[0].name : "";
+      return { holes: collapseHolesByNumber(list, pos), loopName };
+    }
+
+    let chosen = groupList[0];
+    if (pos) {
+      let best = Infinity;
+      for (const group of groupList) {
+        let score = Infinity;
+        for (const hole of group.holes) {
+          score = Math.min(score, nearestHoleYards(pos, hole));
+        }
+        if (score < best) {
+          best = score;
+          chosen = group;
+        }
+      }
+    } else {
+      chosen = groupList.reduce((a, b) => (b.holes.length > a.holes.length ? b : a));
+    }
+
+    return { holes: collapseHolesByNumber(chosen.holes, pos), loopName: chosen.name };
+  }
+
   root.CaddieCourseMemory = {
     MATCH_YD,
     slugCourseName,
@@ -187,6 +285,9 @@
     mergeCourseModel,
     padCourseHoles,
     holeNeedsTee,
-    holeNeedsGreen
+    holeNeedsGreen,
+    holeLoopName,
+    courseNameForLoop,
+    selectHolesByLoop
   };
 })(typeof window !== "undefined" ? window : globalThis);

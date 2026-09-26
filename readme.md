@@ -5,7 +5,7 @@ A lightweight, hands-free Progressive Web App that recommends clubs from GPS yar
 ## Features
 
 * **Course-aware GPS:** Uses OpenStreetMap to tell home from a golf course. At home it keeps score and does not ask you to set a pin.
-* **Mapped greens:** On a tagged course it reads holes/greens and aims at the current green automatically.
+* **Mapped greens:** On a tagged course it reads holes/greens and aims at the current green automatically. If two nines share hole numbers (Norvelt and Luke’s Links), it keeps the set that matches the hole names under your GPS.
 * **Teach missing holes:** If a hole isn't mapped, save the tee and mark the pin on the green. The phone keeps that for the next round.
 * **Mark-the-pin override:** If a course isn't mapped, or the pin is tucked, stand on the green and mark it.
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.

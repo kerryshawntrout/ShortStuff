@@ -324,7 +324,8 @@ def build():
     story.append(Paragraph(
         "When GPS is on a tagged golf course, the card shows the course name, a hole strip (1–18 if mapped), "
         "and the app aims at that hole’s green. Walk to your ball; the plays-like number and club update. "
-        "Tap a hole number if it guessed the wrong one, or say “hole 7”.",
+        "Tap a hole number if it guessed the wrong one, or say “hole 7”. "
+        "If two nines share 1–9, as at Norvelt and Luke’s Links, it uses the hole names to keep the nine you are standing on.",
         styles["Body"]
     ))
     story.append(Paragraph("On an unmapped course", styles["H2"]))

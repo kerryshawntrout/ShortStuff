@@ -1,0 +1,352 @@
+[
+  {
+    "hole": 1,
+    "name": "Luke's Links 1",
+    "tee": {
+      "lat": 40.1995303,
+      "lng": -79.48692
+    },
+    "green": {
+      "lat": 40.1973976,
+      "lng": -79.4861063
+    },
+    "courseName": "Luke's Links",
+    "par": 4
+  },
+  {
+    "hole": 2,
+    "name": "Luke's Links 2",
+    "tee": {
+      "lat": 40.1973679,
+      "lng": -79.4867658
+    },
+    "green": {
+      "lat": 40.1963959,
+      "lng": -79.4882504
+    },
+    "courseName": "Luke's Links",
+    "par": 3
+  },
+  {
+    "hole": 3,
+    "name": "Luke's Links 3",
+    "tee": {
+      "lat": 40.1960049,
+      "lng": -79.4889722
+    },
+    "green": {
+      "lat": 40.1972321,
+      "lng": -79.4893534
+    },
+    "courseName": "Luke's Links",
+    "par": 3
+  },
+  {
+    "hole": 4,
+    "name": "Luke's Links 4",
+    "tee": {
+      "lat": 40.1971727,
+      "lng": -79.4898178
+    },
+    "green": {
+      "lat": 40.1979416,
+      "lng": -79.4901446
+    },
+    "courseName": "Luke's Links",
+    "par": 3
+  },
+  {
+    "hole": 5,
+    "name": "Luke's Links 5",
+    "tee": {
+      "lat": 40.1979872,
+      "lng": -79.4910743
+    },
+    "green": {
+      "lat": 40.199784,
+      "lng": -79.4901382
+    },
+    "courseName": "Luke's Links",
+    "par": 4
+  },
+  {
+    "hole": 6,
+    "name": "Luke's Links 6",
+    "tee": {
+      "lat": 40.19974,
+      "lng": -79.489143
+    },
+    "green": {
+      "lat": 40.197333,
+      "lng": -79.4889334
+    },
+    "courseName": "Luke's Links",
+    "par": 4
+  },
+  {
+    "hole": 7,
+    "name": "Luke's Links 7",
+    "tee": {
+      "lat": 40.1972683,
+      "lng": -79.4885589
+    },
+    "green": {
+      "lat": 40.1995802,
+      "lng": -79.4881465
+    },
+    "courseName": "Luke's Links",
+    "par": 4
+  },
+  {
+    "hole": 8,
+    "name": "Luke's Links 8",
+    "tee": {
+      "lat": 40.1995718,
+      "lng": -79.4877656
+    },
+    "green": {
+      "lat": 40.1969153,
+      "lng": -79.4882231
+    },
+    "courseName": "Luke's Links",
+    "par": 4
+  },
+  {
+    "hole": 9,
+    "name": "Luke's Links 9",
+    "tee": {
+      "lat": 40.1970273,
+      "lng": -79.4877847
+    },
+    "green": {
+      "lat": 40.199573,
+      "lng": -79.4872629
+    },
+    "courseName": "Luke's Links",
+    "par": 4
+  },
+  {
+    "hole": 1,
+    "name": "Norvelt 1",
+    "tee": {
+      "lat": 40.1996096,
+      "lng": -79.4858567
+    },
+    "green": {
+      "lat": 40.1973242,
+      "lng": -79.4846285
+    },
+    "par": 4
+  },
+  {
+    "hole": 2,
+    "name": "Norvelt 2",
+    "tee": {
+      "lat": 40.1974589,
+      "lng": -79.485517
+    },
+    "green": {
+      "lat": 40.1941566,
+      "lng": -79.4850776
+    },
+    "par": 5
+  },
+  {
+    "hole": 3,
+    "name": "Norvelt 3",
+    "tee": {
+      "lat": 40.1939395,
+      "lng": -79.4841949
+    },
+    "green": {
+      "lat": 40.1923276,
+      "lng": -79.4812319
+    }
+  },
+  {
+    "hole": 4,
+    "name": "Norvelt 4",
+    "tee": {
+      "lat": 40.1912133,
+      "lng": -79.481258
+    },
+    "green": {
+      "lat": 40.1889505,
+      "lng": -79.4832625
+    },
+    "par": 4
+  },
+  {
+    "hole": 5,
+    "name": "Norvelt 5",
+    "tee": {
+      "lat": 40.1888486,
+      "lng": -79.4837906
+    },
+    "green": {
+      "lat": 40.1912396,
+      "lng": -79.4849146
+    },
+    "par": 4
+  },
+  {
+    "hole": 6,
+    "name": "Norvelt 6",
+    "tee": {
+      "lat": 40.1915296,
+      "lng": -79.4837314
+    },
+    "green": {
+      "lat": 40.1923016,
+      "lng": -79.4850141
+    },
+    "par": 3
+  },
+  {
+    "hole": 7,
+    "name": "Norvelt 7",
+    "tee": {
+      "lat": 40.1926454,
+      "lng": -79.4857552
+    },
+    "green": {
+      "lat": 40.1937863,
+      "lng": -79.4876435
+    },
+    "par": 4
+  },
+  {
+    "hole": 8,
+    "name": "Norvelt 8",
+    "tee": {
+      "lat": 40.1942437,
+      "lng": -79.4857626
+    },
+    "green": {
+      "lat": 40.1969928,
+      "lng": -79.4866796
+    },
+    "par": 4
+  },
+  {
+    "hole": 9,
+    "name": "Norvelt 9",
+    "tee": {
+      "lat": 40.1976932,
+      "lng": -79.4857889
+    },
+    "green": {
+      "lat": 40.1999558,
+      "lng": -79.4862827
+    }
+  },
+  {
+    "hole": 10,
+    "name": "Norvelt 10",
+    "tee": {
+      "lat": 40.1997221,
+      "lng": -79.4855467
+    },
+    "green": {
+      "lat": 40.201604,
+      "lng": -79.482524
+    }
+  },
+  {
+    "hole": 11,
+    "name": "Norvelt 11",
+    "tee": {
+      "lat": 40.2018724,
+      "lng": -79.4825404
+    },
+    "green": {
+      "lat": 40.2037061,
+      "lng": -79.4800036
+    }
+  },
+  {
+    "hole": 12,
+    "name": "Norvelt 12",
+    "tee": {
+      "lat": 40.2033498,
+      "lng": -79.4794953
+    },
+    "green": {
+      "lat": 40.1997106,
+      "lng": -79.4817644
+    },
+    "par": 5
+  },
+  {
+    "hole": 13,
+    "name": "Norvelt 13",
+    "tee": {
+      "lat": 40.1993324,
+      "lng": -79.4817034
+    },
+    "green": {
+      "lat": 40.1981965,
+      "lng": -79.482263
+    }
+  },
+  {
+    "hole": 14,
+    "name": "Norvelt 14",
+    "tee": {
+      "lat": 40.1977937,
+      "lng": -79.4825769
+    },
+    "green": {
+      "lat": 40.198953,
+      "lng": -79.4794272
+    }
+  },
+  {
+    "hole": 15,
+    "name": "Norvelt 15",
+    "tee": {
+      "lat": 40.1988063,
+      "lng": -79.4790595
+    },
+    "green": {
+      "lat": 40.1951344,
+      "lng": -79.4812921
+    }
+  },
+  {
+    "hole": 16,
+    "name": "Norvelt 16",
+    "tee": {
+      "lat": 40.1954324,
+      "lng": -79.4804253
+    },
+    "green": {
+      "lat": 40.1938798,
+      "lng": -79.4808223
+    }
+  },
+  {
+    "hole": 17,
+    "name": "Norvelt 17",
+    "tee": {
+      "lat": 40.1942647,
+      "lng": -79.4817791
+    },
+    "green": {
+      "lat": 40.1972879,
+      "lng": -79.4829336
+    }
+  },
+  {
+    "hole": 18,
+    "name": "Norvelt 18",
+    "tee": {
+      "lat": 40.1976391,
+      "lng": -79.482729
+    },
+    "green": {
+      "lat": 40.1994588,
+      "lng": -79.4849634
+    }
+  }
+]

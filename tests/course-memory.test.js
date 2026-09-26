@@ -71,4 +71,39 @@ const userPar = M.mergeCourseModel(
 );
 assert.strictEqual(userPar.holes[0].par, 4);
 
+assert.strictEqual(M.holeLoopName({ name: "Luke's Links 1", courseName: "Luke's Links" }), "Luke's Links");
+assert.strictEqual(M.holeLoopName({ name: "Norvelt 11" }), "Norvelt");
+assert.strictEqual(M.courseNameForLoop("Norvelt Golf Club", "Norvelt"), "Norvelt Golf Club");
+assert.strictEqual(M.courseNameForLoop("Norvelt Golf Club", "Luke's Links"), "Luke's Links");
+
+const norveltLukes = require("./norvelt-lukes-holes.json");
+const lukesTee = norveltLukes.find((h) => h.name === "Luke's Links 3").tee;
+const onLukes = M.selectHolesByLoop(norveltLukes, lukesTee);
+assert.strictEqual(onLukes.loopName, "Luke's Links");
+assert.strictEqual(onLukes.holes.length, 9);
+assert.ok(onLukes.holes.every((h) => String(h.name).startsWith("Luke's Links")));
+assert.strictEqual(onLukes.holes.find((h) => h.hole === 1).name, "Luke's Links 1");
+assert.strictEqual(M.courseNameForLoop("Norvelt Golf Club", onLukes.loopName), "Luke's Links");
+assert.strictEqual(M.padCourseHoles(onLukes.holes, 1).length, 9);
+
+const norveltTee = norveltLukes.find((h) => h.name === "Norvelt 11").tee;
+const onNorvelt = M.selectHolesByLoop(norveltLukes, norveltTee);
+assert.strictEqual(onNorvelt.loopName, "Norvelt");
+assert.strictEqual(onNorvelt.holes.length, 18);
+assert.strictEqual(onNorvelt.holes.find((h) => h.hole === 1).name, "Norvelt 1");
+assert.strictEqual(onNorvelt.holes.find((h) => h.hole === 11).name, "Norvelt 11");
+assert.ok(!onNorvelt.holes.some((h) => String(h.name).includes("Luke")));
+assert.strictEqual(M.courseNameForLoop("Norvelt Golf Club", onNorvelt.loopName), "Norvelt Golf Club");
+
+const noGps = M.selectHolesByLoop(norveltLukes, null);
+assert.strictEqual(noGps.loopName, "Norvelt");
+assert.strictEqual(noGps.holes.length, 18);
+
+const mixedNines = [
+  { hole: 1, name: "Front 1", tee: { lat: 1, lng: 1 }, green: { lat: 1.01, lng: 1.01 } },
+  { hole: 10, name: "Back 10", tee: { lat: 1.02, lng: 1.02 }, green: { lat: 1.03, lng: 1.03 } }
+];
+const bothNines = M.selectHolesByLoop(mixedNines, { lat: 1, lng: 1 });
+assert.strictEqual(bothNines.holes.length, 2);
+
 console.log("course-memory tests passed");

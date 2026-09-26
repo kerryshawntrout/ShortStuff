@@ -44,7 +44,7 @@ const RESUME_DEBOUNCE_MS = 800;
 const MAX_COURSE_MEMORIES = 6;
 const MAX_HOLE_HAZARDS = 6;
 const MAX_SAVED_ROUNDS = 12;
-const APP_VERSION = "v14";
+const APP_VERSION = "v15";
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
@@ -57,7 +57,10 @@ if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
     upsertHoleMemory(memory) { return memory; },
     memoryKey() { return "unnamed-course"; },
     slugCourseName() { return "unnamed-course"; },
-    isGenericCourseName() { return true; }
+    isGenericCourseName() { return true; },
+    holeLoopName() { return ""; },
+    courseNameForLoop(courseName) { return courseName || "Golf course"; },
+    selectHolesByLoop(holes) { return { holes: holes || [], loopName: "" }; }
   };
 }
 
@@ -834,7 +837,7 @@ function speakLocation() {
   if (locationMode === "course") {
     const course = detectedCourse?.name || "a golf course";
     const mapped = holeByNumber(currentHole);
-    const holeText = mapped?.name ? `Hole ${mapped.hole} ${mapped.name}` : `hole ${currentHole}`;
+    const holeText = mapped?.name || `hole ${currentHole}`;
     speakFeedback(`${golferName()}, you're on ${course}, ${holeText}, par ${currentHolePar}.`);
     return;
   }
@@ -1206,7 +1209,7 @@ function goToHole(n, announce) {
   updateLocationUI();
   updateHeroForMode();
   if (announce) {
-    const label = mapped?.name ? `${holeNum} ${mapped.name}` : String(holeNum);
+    const label = mapped?.name || String(holeNum);
     if (CaddieCourseMemory.holeNeedsGreen(mapped)) {
       speakFeedback(`${golferName()}, hole ${label} isn't mapped yet. Save the tee here, then mark the pin on the green. I'll keep it for next time.`);
     } else {
@@ -1261,7 +1264,7 @@ function updateLocationUI(detail) {
     card.classList.add("course");
     const mapped = holeByNumber(currentHole);
     const holeLabel = mapped
-      ? `Hole ${mapped.hole}${mapped.name ? ` ${mapped.name}` : ""} · Par ${mapped.par || currentHolePar}`
+      ? `${mapped.name || `Hole ${mapped.hole}`} · Par ${mapped.par || currentHolePar}`
       : `Hole ${currentHole}`;
     nameEl.innerText = detectedCourse?.name || "On a golf course";
     const learnedCount = courseHoles.filter((hole) => hole.learned && (hole.tee || hole.green)).length;
@@ -1452,7 +1455,7 @@ function elementCenter(el) {
 
 function buildCourseModel(elements, pos) {
   const courses = [];
-  const holeMap = new Map();
+  const rawHoles = [];
   const pins = [];
   const greens = [];
   const rawHazards = [];
@@ -1476,10 +1479,11 @@ function buildCourseModel(elements, pos) {
         ? { lat: geom[geom.length - 1].lat, lng: geom[geom.length - 1].lon }
         : center;
       if (!ref || !greenPt) continue;
-      holeMap.set(ref, {
+      rawHoles.push({
         hole: ref,
         par: parsePar(tags.par),
         name: tags.name || null,
+        courseName: tags["golf:course:name"] || null,
         tee: teePt,
         green: greenPt,
         pin: null,
@@ -1502,6 +1506,9 @@ function buildCourseModel(elements, pos) {
       });
     }
   }
+
+  const selected = CaddieCourseMemory.selectHolesByLoop(rawHoles, pos);
+  const holeMap = new Map(selected.holes.map((hole) => [hole.hole, hole]));
 
   for (const pin of pins) {
     if (pin.ref && holeMap.has(pin.ref)) {
@@ -1556,9 +1563,11 @@ function buildCourseModel(elements, pos) {
     calculateHaversineDistanceYards(pos, a) - calculateHaversineDistanceYards(pos, b)
   ));
 
+  const parentName = (courses[0] || {}).name;
+  const name = CaddieCourseMemory.courseNameForLoop(parentName, selected.loopName);
   return {
-    course: courses[0] || (holes.length ? { name: "Golf course" } : null),
-    name: (courses[0] || {}).name || (holes.length ? "Golf course" : null),
+    course: courses[0] ? { ...courses[0], name } : (holes.length ? { name } : null),
+    name,
     holes
   };
 }
@@ -1940,8 +1949,8 @@ function updateScoreUI() {
   const totalElem = document.getElementById("totalScoreDisplay");
 
   const mapped = holeByNumber(currentHole);
-  const holeName = mapped?.name ? ` ${mapped.name}` : "";
-  if (holeElem) holeElem.innerText = `Hole ${currentHole}${holeName} (Par ${currentHolePar})`;
+  const holeTitle = mapped?.name || `Hole ${currentHole}`;
+  if (holeElem) holeElem.innerText = `${holeTitle} (Par ${currentHolePar})`;
   if (strokesElem) strokesElem.innerText = `${currentHoleStrokes} strokes`;
 
   if (totalElem) {
