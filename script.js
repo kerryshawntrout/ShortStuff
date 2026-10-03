@@ -44,8 +44,7 @@ const RESUME_DEBOUNCE_MS = 800;
 const MAX_COURSE_MEMORIES = 6;
 const MAX_HOLE_HAZARDS = 6;
 const MAX_SAVED_ROUNDS = 12;
-const APP_VERSION = "v15";
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const APP_VERSION = "v16";
 
 if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
   window.CaddieCourseMemory = {
@@ -198,9 +197,7 @@ let recommendedClubObj = null;
 let currentStrategy = "";
 let wakeLock = null;
 let watchId = null;
-let recognizer = null;
-let voiceEnabled = false;
-let isSpeaking = false;
+let caddieOn = false;
 let telemetryInFlight = false;
 let lastTelemetryAt = 0;
 let lastElevYards = null;
@@ -238,21 +235,31 @@ document.addEventListener("DOMContentLoaded", () => {
         .catch((err) => console.error("Service Worker registration failed:", err));
     }
 
-    onElement("startBtn", "click", toggleVoiceCaddie);
+    onElement("startBtn", "click", toggleCaddie);
     onElement("markPinBtn", "click", () => markPinHere(true));
     onElement("saveTeeBtn", "click", () => saveTeeHere(true));
     onElement("addStrokeBtn", "click", () => addStroke(true));
+    onElement("goodShotBtn", "click", logGoodShot);
     onElement("undoStrokeBtn", "click", () => undoStroke(true));
+    onElement("scoreBtn", "click", speakScore);
     onElement("nextHoleBtn", "click", () => completeHole(false, true));
     onElement("skipHoleBtn", "click", () => completeHole(true, true));
     onElement("finishRoundBtn", "click", () => finishRound(true));
     onElement("askCaddieBtn", "click", speakRecommendation);
+    onElement("shortBtn", "click", () => logMiss("short"));
+    onElement("longBtn", "click", () => logMiss("long"));
+    onElement("leftBtn", "click", () => logMiss("left"));
+    onElement("rightBtn", "click", () => logMiss("right"));
+    onElement("par3Btn", "click", () => setHolePar(3, true));
+    onElement("par4Btn", "click", () => setHolePar(4, true));
+    onElement("par5Btn", "click", () => setHolePar(5, true));
     onElement("onCourseBtn", "click", () => setLocationOverride("course", true));
     onElement("offCourseBtn", "click", () => setLocationOverride("home", true));
+    onElement("whereBtn", "click", speakLocation);
     onElement("previewVoiceBtn", "click", previewCaddieVoice);
-    onElement("playerNameInput", "change", onNameInputChange);
+    onElement("playerNameInput", "change", (event) => setGolferName(event.target.value, true));
     onElement("playerNameInput", "blur", onNameInputChange);
-    onElement("handicapInput", "change", onHandicapInputChange);
+    onElement("handicapInput", "change", (event) => setHandicap(event.target.value, true));
     onElement("handicapInput", "blur", onHandicapInputChange);
     onElement("addClubBtn", "click", onAddClub);
     onElement("resetBagBtn", "click", onResetBag);
@@ -284,19 +291,29 @@ document.addEventListener("DOMContentLoaded", () => {
   startGpsWatch();
 });
 
-async function toggleVoiceCaddie() {
-  if (voiceEnabled) {
-    stopVoiceEngine();
+async function toggleCaddie() {
+  if (caddieOn) {
+    stopCaddie();
     return;
   }
-  await initCaddie();
+  await startCaddie();
 }
 
-async function initCaddie() {
-  updateStatus("Starting caddie...", true);
-  await requestWakeLock();
+async function startCaddie() {
+  caddieOn = true;
+  updateStartButton();
+  updateStatus("Caddie ready", true);
+  speakFeedback(`G'day ${golferName()}. Tap the buttons and I'll talk you through the round.`);
   startGpsWatch();
-  initVoiceEngine();
+  await requestWakeLock();
+}
+
+function stopCaddie() {
+  caddieOn = false;
+  releaseWakeLock();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  updateStartButton();
+  updateStatus("Standby", false);
 }
 
 function startGpsWatch(options = {}) {
@@ -329,7 +346,7 @@ function startGpsWatch(options = {}) {
     lastGpsErrorCode = err.code;
     console.error("GPS Error:", err);
     const denied = err.code === err.PERMISSION_DENIED;
-    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", voiceEnabled, denied);
+    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", caddieOn, denied);
     if (denied) {
       locationMode = "unknown";
       updateLocationUI("Location permission denied. Scorekeeping still works. Enable GPS to detect a golf course.");
@@ -382,66 +399,6 @@ function resumeLocation() {
   restartGpsWatch({ fresh: true });
 }
 
-// ==========================================
-// 3. VOICE ENGINE & COMMAND PARSER
-// ==========================================
-function initVoiceEngine() {
-  if (!SpeechRecognition) {
-    updateStatus("Voice not supported", false, true);
-    alert("Web Speech API is not supported in this browser. Chrome on Android works best. Use the on-screen buttons instead.");
-    return;
-  }
-
-  disposeRecognizer();
-  recognizer = new SpeechRecognition();
-  recognizer.continuous = true;
-  recognizer.interimResults = false;
-  recognizer.lang = "en-AU";
-
-  recognizer.onresult = (event) => {
-    const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-    console.log("Caddie Heard:", transcript);
-    parseVoiceCommand(transcript);
-  };
-
-  recognizer.onerror = (event) => {
-    if (event.error === "not-allowed") {
-      voiceEnabled = false;
-      updateStartButton();
-      updateStatus("Mic permission denied", false, true);
-      return;
-    }
-    if (event.error !== "no-speech" && event.error !== "aborted") {
-      console.warn("Speech recognition error:", event.error);
-    }
-  };
-
-  recognizer.onend = () => {
-    if (voiceEnabled && !isSpeaking) {
-      restartRecognition();
-    }
-  };
-
-  voiceEnabled = true;
-  updateStartButton();
-  updateStatus("Voice listening active", true);
-  restartRecognition();
-  speakFeedback(`G'day ${golferName()}. I'm your caddie. Listening now.`);
-}
-
-function disposeRecognizer() {
-  if (!recognizer) return;
-  recognizer.onresult = null;
-  recognizer.onerror = null;
-  recognizer.onend = null;
-  try {
-    recognizer.stop();
-  } catch (err) {
-    // Already stopped.
-  }
-  recognizer = null;
-}
-
 async function releaseWakeLock() {
   const lock = wakeLock;
   wakeLock = null;
@@ -451,133 +408,6 @@ async function releaseWakeLock() {
   } catch (err) {
     // Already released.
   }
-}
-
-function stopVoiceEngine() {
-  voiceEnabled = false;
-  isSpeaking = false;
-  disposeRecognizer();
-  releaseWakeLock();
-  if (window.speechSynthesis) window.speechSynthesis.cancel();
-  updateStartButton();
-  updateStatus("Standby", false);
-}
-
-function restartRecognition() {
-  if (!voiceEnabled || !recognizer || isSpeaking) return;
-  try {
-    recognizer.start();
-  } catch (err) {
-    // start() throws if a session is already running.
-  }
-}
-
-function parseVoiceCommand(speech) {
-  if (includesAny(speech, ["mark pin", "set pin", "mark the pin", "mark the green", "that's the pin", "thats the pin"])) {
-    markPinHere(true);
-    return;
-  }
-  if (includesAny(speech, ["save tee", "mark tee", "that's the tee", "thats the tee", "this is the tee", "tee here"])) {
-    saveTeeHere(true);
-    return;
-  }
-  if (includesAny(speech, ["i'm at home", "im at home", "at home", "off the course", "off course"])) {
-    setLocationOverride("home", true);
-    return;
-  }
-  if (includesAny(speech, ["i'm on a course", "im on a course", "on the course", "on a course"])) {
-    setLocationOverride("course", true);
-    return;
-  }
-  if (includesAny(speech, ["what course", "where am i", "what course am i on"])) {
-    speakLocation();
-    return;
-  }
-  const nameMatch = speech.match(/(?:my name is|call me)\s+([a-z][a-z' -]{1,22})/i);
-  if (nameMatch) {
-    setGolferName(nameMatch[1], true);
-    return;
-  }
-  const hcpMatch = speech.match(/handicap(?:\s+of)?\s+(\d{1,2})/) || speech.match(/\bi(?:'m| am) a (\d{1,2})\b/);
-  if (hcpMatch) {
-    setHandicap(Number(hcpMatch[1]), true);
-    return;
-  }
-  const holeMatch = speech.match(/\bhole (\d{1,2})\b/);
-  if (holeMatch && !includesAny(speech, ["next hole", "finish hole", "skip hole"])) {
-    goToHole(Number(holeMatch[1]), true);
-    return;
-  }
-  if (includesAny(speech, ["par 3", "par three"])) {
-    setHolePar(3, true);
-    return;
-  }
-  if (includesAny(speech, ["par 4", "par four"])) {
-    setHolePar(4, true);
-    return;
-  }
-  if (includesAny(speech, ["par 5", "par five"])) {
-    setHolePar(5, true);
-    return;
-  }
-  if (includesAny(speech, ["undo stroke", "remove stroke", "take away stroke"])) {
-    undoStroke(true);
-    return;
-  }
-  if (includesAny(speech, ["add stroke", "count shot", "add shot"])) {
-    addStroke(true);
-    return;
-  }
-  if (includesAny(speech, ["skip hole"])) {
-    completeHole(true, true);
-    return;
-  }
-  if (includesAny(speech, ["next hole", "finish hole", "hole complete"])) {
-    completeHole(false, true);
-    return;
-  }
-  if (includesAny(speech, ["what's my score", "whats my score", "current score", "total score"])) {
-    const relText = getRelativeScoreSpeech(completedHoles, currentHoleStrokes, currentHolePar);
-    speakFeedback(`${golferName()}, you're on hole ${currentHole} with ${currentHoleStrokes} strokes. Overall you're ${relText}.`);
-    return;
-  }
-  if (includesAny(speech, ["finish round", "end round", "save round"])) {
-    finishRound(true);
-    return;
-  }
-  if (includesAny(speech, ["okay caddie", "ok caddie", "hey caddie", "caddie", "what club", "how far", "distance"])) {
-    speakRecommendation();
-    return;
-  }
-  if (includesAny(speech, ["good shot", "in target", "hit green"])) {
-    addStroke(false);
-    logShot("hit");
-    speakFeedback(`Beauty, ${golferName()}. Target hit logged. Stroke ${currentHoleStrokes} counted.`);
-    return;
-  }
-  if (includesAny(speech, ["came up short", "too short", "short miss"])) {
-    logShot("short");
-    speakFeedback("Logged short miss. Adjusting club yardages up.");
-    return;
-  }
-  if (includesAny(speech, ["flew long", "too long", "went long", "long miss"])) {
-    logShot("long");
-    speakFeedback("Logged long miss. Adjusting club yardages down.");
-    return;
-  }
-  if (includesAny(speech, ["missed left", "pulled it", "left miss"])) {
-    logShot("left");
-    speakFeedback("Logged left miss. Updating draw bias.");
-    return;
-  }
-  if (includesAny(speech, ["missed right", "pushed it", "right miss"])) {
-    logShot("right");
-    speakFeedback("Logged right miss. Updating fade bias.");
-  }
-}
-
-function includesAny(speech, phrases) {
-  return phrases.some((phrase) => speech.includes(phrase));
 }
 
 // ==========================================
@@ -603,8 +433,8 @@ async function onPositionUpdate(position) {
     }
   }
 
-  if (voiceEnabled) {
-    updateStatus("Voice listening active", true);
+  if (caddieOn) {
+    updateStatus("Caddie ready", true);
   } else if (locationMode === "course") {
     updateStatus("On course", false);
   } else if (locationMode === "home") {
@@ -714,7 +544,7 @@ async function markPinHere(announce) {
       ? "Location permission denied. Enable GPS in the browser to mark the pin."
       : "Still waiting on a GPS fix. Try again in a moment.";
     if (announce) speakFeedback(message);
-    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", voiceEnabled, denied);
+    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", caddieOn, denied);
     return;
   }
 
@@ -745,7 +575,7 @@ async function markPinHere(announce) {
       ? `Practice pin marked, ${golferName()}. That's only for testing off the course.`
       : (learnedGreen
         ? `Green saved for hole ${currentHole}, ${golferName()}. Next time I'll have it.`
-        : `Pin marked, ${golferName()}. Walk to your ball and ask for distance.`));
+        : `Pin marked, ${golferName()}. Walk to your ball and tap Ask Caddie.`));
   }
   refreshYardage();
 }
@@ -758,7 +588,7 @@ function saveTeeHere(announce) {
       ? "Location permission denied. Enable GPS to save the tee."
       : "Still waiting on a GPS fix. Try again in a moment.";
     if (announce) speakFeedback(message);
-    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", voiceEnabled, denied);
+    updateStatus(denied ? "Location permission denied" : "Waiting for GPS fix", caddieOn, denied);
     return;
   }
   if (locationMode !== "course") {
@@ -1039,7 +869,7 @@ function applyHomeMode(detail) {
     document.getElementById("elevDiff").innerText = "-- yd";
     document.getElementById("windInfo").innerText = "-- mph";
   }
-  if (!voiceEnabled) updateStatus("At home", false);
+  if (!caddieOn) updateStatus("At home", false);
   updateLocationUI(detail);
   renderHoleStrip();
   updateMarkPinButton();
@@ -1085,7 +915,7 @@ function applyUnmappedCourse(pos) {
     const raw = document.getElementById("rawDistance");
     if (raw) raw.innerText = "No green yet";
   }
-  if (!voiceEnabled) updateStatus("On course", false);
+  if (!caddieOn) updateStatus("On course", false);
 }
 
 function applyCourseModel(model, pos) {
@@ -1592,9 +1422,8 @@ document.addEventListener("visibilitychange", async () => {
   }
   if (document.visibilityState !== "visible") return;
   resumeLocation();
-  if (voiceEnabled) {
+  if (caddieOn) {
     await requestWakeLock();
-    restartRecognition();
   }
 });
 
@@ -1822,6 +1651,38 @@ function logShot(type) {
   updateProfileUI();
 }
 
+function speakScore() {
+  const relText = getRelativeScoreSpeech(completedHoles, currentHoleStrokes, currentHolePar);
+  speakFeedback(`${golferName()}, you're on hole ${currentHole} with ${currentHoleStrokes} strokes. Overall you're ${relText}.`);
+}
+
+function logGoodShot() {
+  addStroke(false);
+  const hadClub = Boolean(recommendedClubObj);
+  logShot("hit");
+  if (hadClub) {
+    speakFeedback(`Beauty, ${golferName()}. Target hit logged. Stroke ${currentHoleStrokes} counted.`);
+    return;
+  }
+  speakFeedback(`Stroke ${currentHoleStrokes} counted, ${golferName()}. Tap Ask Caddie first if you want that hit saved on the club.`);
+}
+
+function logMiss(type) {
+  const hadClub = Boolean(recommendedClubObj);
+  logShot(type);
+  if (!hadClub) {
+    speakFeedback(`${golferName()}, tap Ask Caddie first, then tell me how the shot finished.`);
+    return;
+  }
+  const lines = {
+    short: "Logged short miss. Adjusting club yardages up.",
+    long: "Logged long miss. Adjusting club yardages down.",
+    left: "Logged left miss. Updating draw bias.",
+    right: "Logged right miss. Updating fade bias."
+  };
+  speakFeedback(lines[type] || "Logged.");
+}
+
 // ==========================================
 // 7. SCOREKEEPING & HISTORY UTILITIES
 // ==========================================
@@ -1874,7 +1735,7 @@ function undoStroke(announce) {
 
 function completeHole(skip, announce) {
   if (!skip && currentHoleStrokes === 0) {
-    if (announce) speakFeedback("No strokes logged for this hole. Say add stroke, or skip hole.");
+    if (announce) speakFeedback("No strokes logged for this hole. Tap Add Stroke, or Skip Hole.");
     return;
   }
 
@@ -1952,11 +1813,22 @@ function updateScoreUI() {
   const holeTitle = mapped?.name || `Hole ${currentHole}`;
   if (holeElem) holeElem.innerText = `${holeTitle} (Par ${currentHolePar})`;
   if (strokesElem) strokesElem.innerText = `${currentHoleStrokes} strokes`;
+  updateParButtons();
 
   if (totalElem) {
     const relScore = calculateRelativeScore(completedHoles, currentHoleStrokes, currentHolePar);
     totalElem.innerText = relScore.formatted;
   }
+}
+
+function updateParButtons() {
+  [3, 4, 5].forEach((par) => {
+    const btn = document.getElementById(`par${par}Btn`);
+    if (!btn) return;
+    const selected = currentHolePar === par;
+    btn.classList.toggle("active", selected);
+    btn.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
 }
 
 function calculateRelativeScore(completed, activeStrokes = 0, activePar = 0) {
@@ -2227,7 +2099,7 @@ function speakRecommendation() {
   if (!targetPin) {
     speakFeedback(locationMode === "course"
       ? `${golferName()}, I don't have a green for this hole yet. Mark the pin from the green.`
-      : `${golferName()}, I haven't found a course yet. If you're playing, say I'm on a course, then mark the pin.`);
+      : `${golferName()}, I haven't found a course yet. If you're playing, tap I'm on a course, then mark the pin.`);
     return;
   }
   if (!playsLikeDistYards || !recommendedClubObj) {
@@ -2284,7 +2156,7 @@ function onNameInputChange(event) {
 }
 
 function previewCaddieVoice() {
-  speakFeedback(`G'day ${golferName()}. I'll caddie for you in an Australian voice. When you've got a number, just ask.`);
+  speakFeedback(`G'day ${golferName()}. I'll caddie for you in an Australian voice. When you've got a number, tap Ask Caddie.`);
 }
 
 function initSpeechVoices() {
@@ -2364,13 +2236,6 @@ function pickCaddieVoice(voices) {
 function speakFeedback(message) {
   if (!window.speechSynthesis) return;
 
-  isSpeaking = true;
-  try {
-    recognizer?.stop();
-  } catch (err) {
-    // Recognition may already be idle.
-  }
-
   window.speechSynthesis.cancel();
   if (!caddieVoice) {
     caddieVoice = pickCaddieVoice(window.speechSynthesis.getVoices() || []);
@@ -2381,14 +2246,6 @@ function speakFeedback(message) {
   utterance.rate = 0.98;
   utterance.pitch = voiceGenderScore(caddieVoice) < 0 ? 0.78 : 0.9;
   if (caddieVoice) utterance.voice = caddieVoice;
-  const finishSpeech = () => {
-    utterance.onend = null;
-    utterance.onerror = null;
-    isSpeaking = false;
-    restartRecognition();
-  };
-  utterance.onend = finishSpeech;
-  utterance.onerror = finishSpeech;
   window.speechSynthesis.speak(utterance);
 }
 
@@ -2478,6 +2335,7 @@ function updateStatus(text, isActive, isError = false) {
 function updateStartButton() {
   const btn = document.getElementById("startBtn");
   if (!btn) return;
-  btn.classList.toggle("stop", voiceEnabled);
-  btn.innerText = voiceEnabled ? "STOP VOICE CADDIE" : "START VOICE CADDIE";
+  btn.classList.toggle("stop", caddieOn);
+  btn.textContent = caddieOn ? "STOP CADDIE" : "START CADDIE";
+  btn.setAttribute("aria-pressed", caddieOn ? "true" : "false");
 }

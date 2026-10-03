@@ -1,7 +1,7 @@
 {
   "short_name": "AI Caddie",
-  "name": "Hands-Free AI Caddie & Scorekeeper",
-  "description": "Hands-free golf caddie with GPS yardage, wind and elevation adjustments, voice commands, and scorekeeping.",
+  "name": "AI Caddie & Scorekeeper",
+  "description": "Golf caddie with GPS yardage, wind and elevation adjustments, tap controls, and a spoken caddie.",
   "icons": [
     {
       "src": "aii.png",

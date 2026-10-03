@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Hands-Free AI Caddie & Scorekeeper</title>
+  <title>AI Caddie & Scorekeeper</title>
 
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
@@ -15,19 +15,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="AI Caddie">
-  <meta name="description" content="Hands-free golf caddie with GPS yardage, wind and elevation adjustments, voice commands, and scorekeeping.">
+  <meta name="description" content="Golf caddie with GPS yardage, wind and elevation adjustments, tap controls, and a spoken caddie.">
 </head>
 <body>
   <div class="app-container">
     <header>
       <div class="header-title">
         <h1>AI Caddie & Scorekeeper</h1>
-        <span id="appVersion" class="app-version" aria-label="App version v15">v15</span>
+        <span id="appVersion" class="app-version" aria-label="App version v16">v16</span>
       </div>
       <div id="status" class="status-badge">Standby</div>
     </header>
 
-    <button id="startBtn" class="start-btn" type="button">START VOICE CADDIE</button>
+    <button id="startBtn" class="start-btn" type="button">START CADDIE</button>
+    <p id="tapHint" class="tap-hint">Every button speaks. Start Caddie keeps the screen awake for the round. The microphone stays off.</p>
 
     <section class="profile-card">
       <h3>Your caddie</h3>
@@ -68,6 +69,7 @@
       <div class="location-actions">
         <button id="onCourseBtn" class="score-btn" type="button">I'm on a course</button>
         <button id="offCourseBtn" class="score-btn" type="button">I'm at home</button>
+        <button id="whereBtn" class="score-btn" type="button">Where am I?</button>
         <button id="saveTeeBtn" class="score-btn hidden" type="button">Save tee here</button>
       </div>
     </section>
@@ -82,15 +84,31 @@
     </section>
 
     <section class="controls-card">
-      <h3>Round Controls</h3>
+      <h3>Talk to the caddie</h3>
+      <p class="voice-status">Tap what you want. The caddie says it back. Nothing is listening.</p>
       <div class="controls-grid">
-        <button id="markPinBtn" class="score-btn" type="button">Drop practice pin</button>
+        <button id="askCaddieBtn" class="score-btn primary" type="button">Ask Caddie</button>
         <button id="addStrokeBtn" class="score-btn" type="button">Add Stroke</button>
+        <button id="goodShotBtn" class="score-btn" type="button">Good shot</button>
         <button id="undoStrokeBtn" class="score-btn" type="button">Undo Stroke</button>
+        <button id="scoreBtn" class="score-btn" type="button">My score</button>
         <button id="nextHoleBtn" class="score-btn gold" type="button">Next Hole</button>
-        <button id="finishRoundBtn" class="score-btn danger" type="button">Finish Round</button>
-        <button id="askCaddieBtn" class="score-btn" type="button">Ask Caddie</button>
         <button id="skipHoleBtn" class="score-btn" type="button">Skip Hole</button>
+        <button id="markPinBtn" class="score-btn" type="button">Drop practice pin</button>
+        <button id="finishRoundBtn" class="score-btn danger" type="button">Finish Round</button>
+      </div>
+      <h3 class="subhead">How the shot went</h3>
+      <div class="controls-grid">
+        <button id="shortBtn" class="score-btn" type="button">Came up short</button>
+        <button id="longBtn" class="score-btn" type="button">Flew long</button>
+        <button id="leftBtn" class="score-btn" type="button">Missed left</button>
+        <button id="rightBtn" class="score-btn" type="button">Missed right</button>
+      </div>
+      <h3 class="subhead">Hole par</h3>
+      <div class="par-grid">
+        <button id="par3Btn" class="score-btn par-btn" type="button" aria-pressed="false">Par 3</button>
+        <button id="par4Btn" class="score-btn par-btn" type="button" aria-pressed="false">Par 4</button>
+        <button id="par5Btn" class="score-btn par-btn" type="button" aria-pressed="false">Par 5</button>
       </div>
     </section>
 
@@ -130,25 +148,19 @@
     </section>
 
     <section class="voice-guide-card">
-      <h3>Hands-Free Voice Commands</h3>
+      <h3>Tap, then listen</h3>
       <ul class="voice-command-list">
-        <li><strong>"Mark pin"</strong> <span>Save this green / override GPS pin</span></li>
-        <li><strong>"Save tee"</strong> <span>Remember this tee for next round</span></li>
-        <li><strong>"Hole 7"</strong> <span>Jump to a mapped hole</span></li>
-        <li><strong>"Where am I?"</strong> <span>Hear course vs home</span></li>
-        <li><strong>"Call me Kerry"</strong> <span>Set the name the caddie uses</span></li>
-        <li><strong>"Handicap 14"</strong> <span>Conservative vs aggressive strategy</span></li>
-        <li><strong>"Par 3 / 4 / 5"</strong> <span>Set hole par rating</span></li>
-        <li><strong>"Add stroke" / "Count shot"</strong> <span>Add 1 stroke to hole</span></li>
-        <li><strong>"Undo stroke"</strong> <span>Remove last stroke</span></li>
-        <li><strong>"Next hole" / "Finish hole"</strong> <span>Save hole score &amp; advance</span></li>
-        <li><strong>"Skip hole"</strong> <span>Advance without saving strokes</span></li>
-        <li><strong>"Finish round"</strong> <span>Save full round history card</span></li>
-        <li><strong>"What's my score?"</strong> <span>Hear score relative to par</span></li>
-        <li><strong>"Okay Caddie" / "Distance"</strong> <span>Get club &amp; target advice</span></li>
-        <li><strong>"Good shot" / "Hit green"</strong> <span>Log hit &amp; add 1 stroke</span></li>
-        <li><strong>"Came up short" / "Flew long"</strong> <span>Tune club yardages</span></li>
-        <li><strong>Your bag</strong> <span>Add, remove, or change clubs. Removed clubs keep their yards if you add them back.</span></li>
+        <li><strong>Start Caddie</strong> <span>Keeps the screen awake and says hello</span></li>
+        <li><strong>Ask Caddie</strong> <span>Hears the plays-like number, club, and plan</span></li>
+        <li><strong>Add Stroke</strong> <span>Counts the shot you just hit</span></li>
+        <li><strong>Good shot</strong> <span>Counts it and remembers a solid strike</span></li>
+        <li><strong>Short / long / left / right</strong> <span>Tunes the club after a miss</span></li>
+        <li><strong>Next Hole</strong> <span>Saves this hole and moves on</span></li>
+        <li><strong>My score</strong> <span>Hears strokes and score to par</span></li>
+        <li><strong>Par 3 / 4 / 5</strong> <span>Sets this hole when the map has no par</span></li>
+        <li><strong>Where am I?</strong> <span>Hears course or home, and the hole</span></li>
+        <li><strong>Hole numbers</strong> <span>Jumps to that hole on the strip</span></li>
+        <li><strong>Your bag</strong> <span>Add, remove, or change clubs. Removed clubs keep their yards.</span></li>
       </ul>
     </section>
   </div>
