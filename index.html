@@ -22,58 +22,13 @@
     <header>
       <div class="header-title">
         <h1>AI Caddie & Scorekeeper</h1>
-        <span id="appVersion" class="app-version" aria-label="App version v16">v16</span>
+        <span id="appVersion" class="app-version" aria-label="App version v17">v17</span>
       </div>
+      <button id="screenToggleBtn" class="screen-toggle" type="button" aria-pressed="false" aria-label="Open your bag">Bag</button>
       <div id="status" class="status-badge">Standby</div>
     </header>
 
-    <button id="startBtn" class="start-btn" type="button">START CADDIE</button>
-    <p id="tapHint" class="tap-hint">Every button speaks. Start Caddie keeps the screen awake for the round. The microphone stays off.</p>
-
-    <section class="profile-card">
-      <h3>Your caddie</h3>
-      <label class="metric-label" for="playerNameInput">Golfer name</label>
-      <input id="playerNameInput" type="text" maxlength="24" spellcheck="false" autocomplete="given-name" aria-label="Golfer name">
-      <label class="metric-label" for="handicapInput">Handicap</label>
-      <input id="handicapInput" type="number" min="0" max="54" step="1" inputmode="numeric" aria-label="Handicap">
-      <p id="planStatus" class="voice-status">Play style: Smart</p>
-      <p id="voiceStatus" class="voice-status">Looking for an Australian male voice…</p>
-      <button id="previewVoiceBtn" class="score-btn" type="button">Hear caddie voice</button>
-    </section>
-
-    <section class="profile-card bag-card">
-      <h3>Your bag</h3>
-      <p class="voice-status">Carry yards. The caddie picks from this list. Remove a club and its yards stay if you add it back. 3–16 clubs, 40–320 yards.</p>
-      <div id="bagList" class="bag-list"></div>
-      <div id="bagBench" class="bag-bench hidden">
-        <p class="metric-label">Out of the bag</p>
-        <p class="voice-status">Yards stay here. Add a club back to use it again.</p>
-        <div id="bagBenchList" class="bag-list"></div>
-      </div>
-      <div class="bag-add">
-        <label class="metric-label" for="newClubName">Add club</label>
-        <input id="newClubName" type="text" maxlength="18" spellcheck="false" autocomplete="off" placeholder="4-Hybrid" aria-label="New club name">
-        <label class="metric-label" for="newClubYards">Yards</label>
-        <input id="newClubYards" type="number" min="40" max="320" step="1" inputmode="numeric" placeholder="185" aria-label="New club yards">
-        <button id="addClubBtn" class="score-btn" type="button">Add club</button>
-      </div>
-      <p id="bagStatus" class="voice-status"></p>
-      <button id="resetBagBtn" class="score-btn danger" type="button">Reset bag</button>
-    </section>
-
-    <section id="locationCard" class="location-card searching">
-      <div class="metric-label">Where you are</div>
-      <div id="courseName" class="location-title">Locating you…</div>
-      <p id="courseDetail" class="location-detail">Checking GPS for a nearby golf course. At home you can keep score without setting a pin.</p>
-      <div id="holeStrip" class="hole-strip hidden"></div>
-      <div class="location-actions">
-        <button id="onCourseBtn" class="score-btn" type="button">I'm on a course</button>
-        <button id="offCourseBtn" class="score-btn" type="button">I'm at home</button>
-        <button id="whereBtn" class="score-btn" type="button">Where am I?</button>
-        <button id="saveTeeBtn" class="score-btn hidden" type="button">Save tee here</button>
-      </div>
-    </section>
-
+    <div id="roundScreen" class="screen">
     <section class="hero-card">
       <div class="metric-label">Adjusted Distance</div>
       <div id="playsLike" class="plays-like">-- yd</div>
@@ -81,6 +36,17 @@
       <div id="playPlan" class="play-plan">Play smart</div>
       <p id="strategyAdvice" class="strategy-advice">Checking whether you are on a golf course. Pin setup is only needed on the course.</p>
       <p id="pinStatus" class="pin-status">Waiting for GPS…</p>
+    </section>
+
+    <section class="metrics-grid score-row">
+      <div class="metric-card score-card">
+        <div class="metric-label" id="currentHoleDisplay">Hole 1 (Par 4)</div>
+        <div id="holeStrokesDisplay" class="metric-value">0 strokes</div>
+      </div>
+      <div class="metric-card score-card">
+        <div class="metric-label">Round Relative Score</div>
+        <div id="totalScoreDisplay" class="metric-value">E (0)</div>
+      </div>
     </section>
 
     <section class="controls-card">
@@ -112,16 +78,34 @@
       </div>
     </section>
 
-    <section class="metrics-grid">
-      <div class="metric-card score-card">
-        <div class="metric-label" id="currentHoleDisplay">Hole 1 (Par 4)</div>
-        <div id="holeStrokesDisplay" class="metric-value">0 strokes</div>
+    <section id="locationCard" class="location-card searching">
+      <div class="metric-label">Where you are</div>
+      <div id="courseName" class="location-title">Locating you…</div>
+      <p id="courseDetail" class="location-detail">Checking GPS for a nearby golf course. At home you can keep score without setting a pin.</p>
+      <div id="holeStrip" class="hole-strip hidden"></div>
+      <div class="location-actions">
+        <button id="onCourseBtn" class="score-btn" type="button">I'm on a course</button>
+        <button id="offCourseBtn" class="score-btn" type="button">I'm at home</button>
+        <button id="whereBtn" class="score-btn" type="button">Where am I?</button>
+        <button id="saveTeeBtn" class="score-btn hidden" type="button">Save tee here</button>
       </div>
-      <div class="metric-card score-card">
-        <div class="metric-label">Round Relative Score</div>
-        <div id="totalScoreDisplay" class="metric-value">E (0)</div>
-      </div>
+    </section>
 
+    <button id="startBtn" class="start-btn" type="button">START CADDIE</button>
+    <p id="tapHint" class="tap-hint">Every button speaks. Start Caddie keeps the screen awake for the round. The microphone stays off.</p>
+
+    <section class="profile-card">
+      <h3>Your caddie</h3>
+      <label class="metric-label" for="playerNameInput">Golfer name</label>
+      <input id="playerNameInput" type="text" maxlength="24" spellcheck="false" autocomplete="given-name" aria-label="Golfer name">
+      <label class="metric-label" for="handicapInput">Handicap</label>
+      <input id="handicapInput" type="number" min="0" max="54" step="1" inputmode="numeric" aria-label="Handicap">
+      <p id="planStatus" class="voice-status">Play style: Smart</p>
+      <p id="voiceStatus" class="voice-status">Looking for an Australian male voice…</p>
+      <button id="previewVoiceBtn" class="score-btn" type="button">Hear caddie voice</button>
+    </section>
+
+    <section class="metrics-grid">
       <div class="metric-card">
         <div class="metric-label">Laser GPS</div>
         <div id="rawDistance" class="metric-value">-- yd</div>
@@ -160,9 +144,33 @@
         <li><strong>Par 3 / 4 / 5</strong> <span>Sets this hole when the map has no par</span></li>
         <li><strong>Where am I?</strong> <span>Hears course or home, and the hole</span></li>
         <li><strong>Hole numbers</strong> <span>Jumps to that hole on the strip</span></li>
-        <li><strong>Your bag</strong> <span>Add, remove, or change clubs. Removed clubs keep their yards.</span></li>
+        <li><strong>Bag</strong> <span>Opens clubs and carry yards. Removed clubs keep their yards.</span></li>
       </ul>
     </section>
+    </div>
+
+    <div id="bagScreen" class="screen hidden">
+      <section class="profile-card bag-card">
+        <h3>Your bag</h3>
+        <p class="voice-status">Carry yards. The caddie picks from this list. Remove a club and its yards stay if you add it back. 3–16 clubs, 40–320 yards.</p>
+        <div id="bagList" class="bag-list"></div>
+        <div id="bagBench" class="bag-bench hidden">
+          <p class="metric-label">Out of the bag</p>
+          <p class="voice-status">Yards stay here. Add a club back to use it again.</p>
+          <div id="bagBenchList" class="bag-list"></div>
+        </div>
+        <div class="bag-add">
+          <label class="metric-label" for="newClubName">Add club</label>
+          <input id="newClubName" type="text" maxlength="18" spellcheck="false" autocomplete="off" placeholder="4-Hybrid" aria-label="New club name">
+          <label class="metric-label" for="newClubYards">Yards</label>
+          <input id="newClubYards" type="number" min="40" max="320" step="1" inputmode="numeric" placeholder="185" aria-label="New club yards">
+          <button id="addClubBtn" class="score-btn" type="button">Add club</button>
+        </div>
+        <p id="bagStatus" class="voice-status"></p>
+        <button id="resetBagBtn" class="score-btn danger" type="button">Reset bag</button>
+        <button id="bagBackBtn" class="score-btn" type="button">Back to round</button>
+      </section>
+    </div>
   </div>
 
   <script src="course-memory.js"></script>

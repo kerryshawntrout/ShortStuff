@@ -44,7 +44,7 @@ const RESUME_DEBOUNCE_MS = 800;
 const MAX_COURSE_MEMORIES = 6;
 const MAX_HOLE_HAZARDS = 6;
 const MAX_SAVED_ROUNDS = 12;
-const APP_VERSION = "v16";
+const APP_VERSION = "v17";
 
 if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
   window.CaddieCourseMemory = {
@@ -236,6 +236,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     onElement("startBtn", "click", toggleCaddie);
+    onElement("screenToggleBtn", "click", toggleScreen);
+    onElement("bagBackBtn", "click", () => showScreen("round"));
     onElement("markPinBtn", "click", () => markPinHere(true));
     onElement("saveTeeBtn", "click", () => saveTeeHere(true));
     onElement("addStrokeBtn", "click", () => addStroke(true));
@@ -290,6 +292,26 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   startGpsWatch();
 });
+
+function showScreen(name) {
+  const onBag = name === "bag";
+  const round = document.getElementById("roundScreen");
+  const bag = document.getElementById("bagScreen");
+  if (round) round.classList.toggle("hidden", onBag);
+  if (bag) bag.classList.toggle("hidden", !onBag);
+  const btn = document.getElementById("screenToggleBtn");
+  if (btn) {
+    btn.textContent = onBag ? "Round" : "Bag";
+    btn.setAttribute("aria-pressed", onBag ? "true" : "false");
+    btn.setAttribute("aria-label", onBag ? "Back to the round" : "Open your bag");
+  }
+  window.scrollTo(0, 0);
+}
+
+function toggleScreen() {
+  const bag = document.getElementById("bagScreen");
+  showScreen(bag && !bag.classList.contains("hidden") ? "round" : "bag");
+}
 
 async function toggleCaddie() {
   if (caddieOn) {
