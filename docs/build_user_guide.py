@@ -155,6 +155,15 @@ def screenshot(path, width_mm=72):
     return img
 
 
+def screenshot_block(path, caption, styles, width_mm=72):
+    if not Path(path).exists():
+        return []
+    return [KeepTogether([
+        screenshot(path, width_mm),
+        Paragraph(caption, styles["Caption"]),
+    ])]
+
+
 def draw_cover(canvas, doc):
     canvas.saveState()
     w, h = A4
@@ -190,7 +199,7 @@ def draw_body(canvas, doc):
     canvas.rect(0, 12 * mm, w, 1.0 * mm, fill=1, stroke=0)
     canvas.setFillColor(white)
     canvas.setFont("Times-Roman", 8)
-    canvas.drawCentredString(w / 2, 5 * mm, f"Hands-free golf caddie  ·  Page {canvas.getPageNumber() - 1}")
+    canvas.drawCentredString(w / 2, 5 * mm, f"Tap in, spoken caddie  ·  Page {canvas.getPageNumber() - 1}")
     canvas.restoreState()
 
 
@@ -205,14 +214,14 @@ def build():
         bottomMargin=18 * mm,
         title="AI Caddie & Scorekeeper User Guide",
         author="AI Caddie",
-        subject="Complete summary and instructions for the hands-free golf caddie PWA",
+        subject="Complete summary and instructions for the tap-controlled golf caddie PWA",
     )
 
     story = []
 
     # ---- COVER (drawn on first page) ----
     story.append(Spacer(1, 52 * mm))
-    story.append(Paragraph("HANDS-FREE GOLF CADDIE", styles["CoverKicker"]))
+    story.append(Paragraph("TAP IN, SPOKEN CADDIE", styles["CoverKicker"]))
     story.append(Paragraph("AI Caddie &amp; Scorekeeper", styles["CoverTitle"]))
     story.append(Paragraph(
         "A complete summary of what the app does, and how to use every part of it<br/>on the course and at home.",
@@ -229,13 +238,13 @@ def build():
         "AI Caddie &amp; Scorekeeper is a phone-based golf caddie. It lives in the browser "
         "(best in Chrome on Android) and can be saved to the Home Screen like an app. "
         "It watches GPS, looks up wind and elevation, picks a club, talks you through a "
-        "sensible plan for the hole, and keeps score by voice or tap.",
+        "sensible plan for the hole, and keeps score when you tap. It talks back. It does not listen.",
         styles["Body"]
     ))
     story.append(Paragraph(
-        "It is built for a real round: pockets, Bluetooth earbuds, and as little tapping "
-        "as possible. It knows the difference between being at home and being on a golf "
-        "course, so it will not nag you to mark a pin in the kitchen.",
+        "It is built for a real round: big buttons, Bluetooth earbuds, and a caddie that "
+        "talks. You tap. It speaks. It knows the difference between being at home and being "
+        "on a golf course, so it will not nag you to mark a pin in the kitchen.",
         styles["Body"]
     ))
     story.append(Paragraph("What it does well", styles["H2"]))
@@ -247,7 +256,7 @@ def build():
         "<b>Manages the hole like a caddie.</b> Handicap, par, and mapped bunkers or water change the advice: club down on short par 4s, lay up on long par 5s, extra club over trouble, miss to the fat of the green.",
         "<b>Talks like a caddie.</b> Australian male voice when the phone has one, and it uses your name (default Kerry).",
         "<b>Keeps score</b> hole by hole, including undo, skip, and finish round. Rounds survive a refresh and finished cards sit in Round History.",
-        "<b>Learns your miss.</b> Saying you came up short, flew long, missed left or right nudges yardages and aim.",
+        "<b>Learns your miss.</b> Tap Came up short, Flew long, Missed left, or Missed right and it nudges yardages and aim.",
     ], styles))
     story.append(Paragraph("What it is not", styles["H2"]))
     story.append(Paragraph(
@@ -267,9 +276,9 @@ def build():
     ))
     story.append(Paragraph("Install it on the phone", styles["H2"]))
     story.append(bullets([
-        "Open the app in <b>Chrome on Android</b> if you can. Voice listening is strongest there. Safari on iPhone will still keep score with buttons; continuous listening is limited.",
+        "Open the app in <b>Chrome on Android</b> or Safari on iPhone. Both can speak. Neither needs the microphone.",
         "Allow <b>Location</b> when asked. High-accuracy GPS is how yardage and course detection work.",
-        "Allow the <b>microphone</b> only if you want hands-free commands.",
+        "Turn the phone volume up, or use earbuds, so you can hear the caddie.",
         "Add to Home Screen (Chrome menu → Add to Home screen / Install app) so it opens full screen like a native app.",
         "After an update, force-close and reopen, or pull to refresh, so you are not stuck on an old cached copy.",
     ], styles))
@@ -285,16 +294,18 @@ def build():
         "<b>iPhone:</b> Settings → Accessibility → Spoken Content → Voices → English. Download <b>Lee</b> (male, Australia). Karen is Australian but female.",
         "Back in the app, tap <b>Hear caddie voice</b>. You should hear “G'day Kerry…” (or your name).",
     ], styles))
-    story.append(KeepTogether([
-        screenshot(ASSETS / "voice_crop.jpg", 72),
-        Paragraph("Your caddie card: name, handicap, play style, and a voice preview.", styles["Caption"]),
-    ]))
+    story.extend(screenshot_block(
+        ASSETS / "voice_crop.jpg",
+        "Your caddie card: name, handicap, play style, and a voice preview.",
+        styles,
+        72,
+    ))
     story.append(Paragraph("Tell it who you are", styles["H2"]))
     story.append(bullets([
-        "<b>Golfer name</b> defaults to Kerry. Change it in the field, or say “call me Kerry”.",
+        "<b>Golfer name</b> defaults to Kerry. Change the field. When you leave it, the caddie says the new name.",
         "<b>Handicap</b> defaults to 14. Set your real number. This is not vanity — it changes strategy.",
         "Handicap 0–8: more aggressive when the shot is on. 9–18: play smart (club down, lay up, fat of the green). 19+: protect the double.",
-        "You can also say “handicap 14”.",
+        "Changing the handicap field makes the caddie say the new play style.",
         "<b>Your bag</b> is the list of clubs and carry yards under Your caddie. Add, remove, or change a number there. The caddie only recommends clubs from that list. Remove takes a club out of play but keeps its yards; add the same name back (or tap Add back) to restore it. Reset bag restores Driver through Lob Wedge.",
     ], styles))
     story.append(callout(
@@ -316,22 +327,24 @@ def build():
         "preview the voice, and review history. It will not demand a pin.",
         styles["Body"]
     ))
-    story.append(KeepTogether([
-        screenshot(ASSETS / "home_crop.jpg", 72),
-        Paragraph("Off-course view. Scorekeeping works; pin setup stays out of the way.", styles["Caption"]),
-    ]))
+    story.extend(screenshot_block(
+        ASSETS / "home_crop.jpg",
+        "Off-course view. Scorekeeping works; pin setup stays out of the way.",
+        styles,
+        72,
+    ))
     story.append(Paragraph("On a mapped course", styles["H2"]))
     story.append(Paragraph(
         "When GPS is on a tagged golf course, the card shows the course name, a hole strip (1–18 if mapped), "
         "and the app aims at that hole’s green. Walk to your ball; the plays-like number and club update. "
-        "Tap a hole number if it guessed the wrong one, or say “hole 7”. "
+        "Tap a hole number if it guessed the wrong one. "
         "If two nines share 1–9, as at Norvelt and Luke’s Links, it uses the hole names to keep the nine you are standing on.",
         styles["Body"]
     ))
     story.append(Paragraph("On an unmapped course", styles["H2"]))
     story.append(Paragraph(
-        "Some courses are not in OpenStreetMap hole-by-hole. Tap <b>I’m on a course</b> (or say it). "
-        "Then stand on the green and tap <b>Mark Pin Here</b> / say “mark pin”. Walk back to the ball "
+        "Some courses are not in OpenStreetMap hole-by-hole. Tap <b>I’m on a course</b>. "
+        "Then stand on the green and tap <b>Mark Pin Here</b>. Walk back to the ball "
         "for yardage. Repeat on each green. If the app thinks you are on a course when you are in the "
         "driveway, tap <b>I’m at home</b>.",
         styles["Body"]
@@ -339,7 +352,7 @@ def build():
     story.append(Paragraph("Teaching a missing hole", styles["H2"]))
     story.append(Paragraph(
         "Totteridge and other local tracks may be missing a few holes on the public map. Dashed hole "
-        "numbers are the gaps. On that tee, tap <b>Save tee here</b> (or say “save tee”). On the green, "
+        "numbers are the gaps. On that tee, tap <b>Save tee here</b>. On the green, "
         "<b>Mark Pin Here</b>. The phone keeps those points. Next round the caddie aims from the tee "
         "without waiting on OpenStreetMap. This stays on the device; it is not uploaded.",
         styles["Body"]
@@ -353,13 +366,13 @@ def build():
     ))
     steps = [
         ("1. First tee.", "Open the app, confirm the course name, check hole 1 and par. Allow GPS to settle for a few seconds while you stand still."),
-        ("2. Start the caddie.", "Tap <b>Start Voice Caddie</b> if you want earbuds. You should hear a greeting with your name. Keep the screen awake; the app requests a wake lock."),
-        ("3. Tee shot.", "If you are on the tee of a mapped hole, you will already have a number and a plan (for example club down on a short par 4). Say “okay caddie” or tap <b>Ask Caddie</b>."),
-        ("4. Hit, then log.", "After the swing, say “add stroke” / “count shot” or tap <b>Add Stroke</b>. Do this for every swing including penalties you want on the card. <b>Undo Stroke</b> if you double-tapped."),
+        ("2. Start the caddie.", "Tap <b>Start Caddie</b>. You should hear a greeting with your name, and the screen stays awake. The microphone is not used."),
+        ("3. Tee shot.", "If you are on the tee of a mapped hole, you will already have a number and a plan (for example club down on a short par 4). Tap <b>Ask Caddie</b> and listen."),
+        ("4. Hit, then log.", "After the swing, tap <b>Add Stroke</b>. Do this for every swing including penalties you want on the card. <b>Undo Stroke</b> if you double-tapped. <b>Good shot</b> counts the stroke and remembers a solid strike."),
         ("5. Walk to the ball.", "Stand still over the ball. The GPS and plays-like figures update. Ask again. The plan changes from tee-shot advice to approach or lay-up advice."),
         ("6. Green and pin.", "Mapped greens are the centre. If the pin is tucked or the map is off, walk to the flag and <b>Mark Pin Here</b>. Then walk back."),
-        ("7. Finish the hole.", "When the ball is in, say “next hole” / “finish hole” or tap <b>Next Hole</b>. It stores par and strokes, then aims at the next green. Use <b>Skip Hole</b> only if you did not play it."),
-        ("8. Finish the round.", "Say “finish round” or tap <b>Finish Round</b>. The current hole is included if it has strokes. A card is written to Round History and the scorecard resets."),
+        ("7. Finish the hole.", "When the ball is in, tap <b>Next Hole</b>. It stores par and strokes, then aims at the next green, and says the score. Use <b>Skip Hole</b> only if you did not play it."),
+        ("8. Finish the round.", "Tap <b>Finish Round</b>. The current hole is included if it has strokes. A card is written to Round History and the scorecard resets."),
     ]
     for title, body in steps:
         story.append(Paragraph(f"<b>{title}</b> {body}", styles["Body"]))
@@ -379,10 +392,12 @@ def build():
         "<b>Play plan</b> is the strategy label: Play smart, Club down, Lay up, Attack when it’s on, Protect the double.",
         "<b>Shot shape bias</b> moves from Neutral toward Fade/Slice or Draw/Hook as you log left and right misses.",
     ], styles))
-    story.append(KeepTogether([
-        screenshot(ASSETS / "strategy_crop.jpg", 78),
-        Paragraph("On a short par 4 at handicap 14: 5-wood, club down, leave a full wedge.", styles["Caption"]),
-    ]))
+    story.extend(screenshot_block(
+        ASSETS / "strategy_crop.jpg",
+        "On a short par 4 at handicap 14: 5-wood, club down, leave a full wedge.",
+        styles,
+        78,
+    ))
 
     # ---- 6 STRATEGY ----
     story.append(Paragraph("6. Course strategy, used properly", styles["H1"]))
@@ -414,7 +429,7 @@ def build():
         styles["Body"]
     ))
     story.append(bullets([
-        "Set par with “par 3 / 4 / 5” or it will already be filled on a mapped hole.",
+        "Set par with the <b>Par 3 / 4 / 5</b> buttons, or leave the par that arrived with a mapped hole. The selected par is highlighted.",
         "<b>Add Stroke</b> after every shot you want on the card.",
         "<b>Next Hole</b> refuses to advance if there are zero strokes (use Skip Hole if you walked it).",
         "<b>Finish Round</b> saves a history card with date, holes played, and score to par. In-progress rounds survive closing the tab.",
@@ -426,47 +441,42 @@ def build():
     story.append(Paragraph(
         "The stock bag is Kerry’s: driver 220, 5-wood 210, 7-wood 200, 3-hybrid 190, then irons and wedges. "
         "Remove a club if you are not carrying it; the yards stay on the phone so adding it back restores the number. "
-        "“Came up short” / “flew long” still tune those numbers after real shots.",
+        "The miss buttons still tune those numbers after real shots.",
         styles["Body"]
     ))
     story.append(bullets([
-        "After a shot with the recommended club, say <b>“came up short”</b> or <b>“flew long”</b>. That club’s number moves two yards and a small distance bias is stored.",
-        "<b>“Missed left” / “pulled it”</b> and <b>“missed right” / “pushed it”</b> build a fade or draw bias used in aim advice.",
-        "<b>“Good shot” / “hit green”</b> logs a hit and adds a stroke.",
+        "After a shot with the recommended club, tap <b>Came up short</b> or <b>Flew long</b>. That club’s number moves two yards and a small distance bias is stored. Tap <b>Ask Caddie</b> first so it knows which club.",
+        "<b>Missed left</b> and <b>Missed right</b> build a fade or draw bias used in aim advice.",
+        "<b>Good shot</b> logs a hit and adds a stroke.",
         "Be honest and consistent. A handful of real misses is more useful than tapping at random on the couch.",
     ], styles))
 
     # ---- 9 VOICE ----
-    story.append(Paragraph("9. Voice command reference", styles["H1"]))
+    story.append(Paragraph("9. Tap reference", styles["H1"]))
     story.append(Paragraph(
-        "Speak naturally; the app matches phrases inside what it heard. Wait until it finishes talking before the next command, or it can hear itself. Tap <b>Stop Voice Caddie</b> when you are in the car.",
+        "You do not talk to the app. Tap the button, then listen. The caddie uses an Australian voice when the phone has one. Tap <b>Stop Caddie</b> in the car if you want the screen to sleep and the current sentence to stop. The buttons still speak if you tap them.",
         styles["Body"]
     ))
     story.append(command_table([
-        ("“Okay caddie”, “distance”, “what club”", "Plays-like number, club, and strategy."),
-        ("“Mark pin”, “that’s the pin”", "Saves GPS as the target. On a missing green, this is remembered for next round."),
-        ("“Save tee”, “that’s the tee”", "Saves this tee for the current hole on this phone."),
-        ("“Hole 7”", "Jumps to that mapped hole and its green. Saves the previous hole if it already had strokes."),
-        ("“Where am I?”, “what course”", "Home versus course name and hole."),
-        ("“I’m at home” / “I’m on a course”", "Overrides GPS if the map is wrong."),
-        ("“Call me Kerry”", "Sets the name used in conversation."),
-        ("“Handicap 14”", "Sets handicap and play style."),
-        ("“Par 3 / 4 / 5”", "Sets the current hole’s par."),
-        ("“Add stroke”, “count shot”", "Adds one stroke."),
-        ("“Undo stroke”", "Removes the last stroke on this hole."),
-        ("“Next hole”, “finish hole”", "Stores the hole and advances."),
-        ("“Skip hole”", "Advances without storing strokes."),
-        ("“What’s my score?”", "Hole, strokes, and score to par."),
-        ("“Finish round”, “save round”", "Writes Round History and resets."),
-        ("“Good shot”, “hit green”", "Hit logged and a stroke added."),
-        ("“Came up short” / “flew long”", "Tunes that club’s yardage."),
-        ("“Missed left” / “missed right”", "Updates fade/draw bias."),
-    ], styles))
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph(
-        "Every voice command has a button except the small talk (“where am I”, “call me…”, miss logging). If the wind is up or Chrome is moody, play the round on buttons and you lose nothing that matters.",
-        styles["Body"]
-    ))
+        ("Ask Caddie", "Plays-like number, club, and strategy."),
+        ("Mark pin / Override pin", "Saves GPS as the target. On a missing green, this is remembered for next round."),
+        ("Save tee here", "Saves this tee for the current hole on this phone."),
+        ("Hole number on the strip", "Jumps to that hole and its green."),
+        ("Where am I?", "Home versus course name and hole."),
+        ("I’m at home / I’m on a course", "Overrides GPS if the map is wrong."),
+        ("Golfer name field", "Sets the name used when the caddie speaks."),
+        ("Handicap field", "Sets handicap and play style, then says it."),
+        ("Par 3 / 4 / 5", "Sets the current hole’s par and highlights that button."),
+        ("Add Stroke", "Adds one stroke and says the count."),
+        ("Undo Stroke", "Removes the last stroke on this hole."),
+        ("Next Hole", "Stores the hole and advances."),
+        ("Skip Hole", "Advances without storing strokes."),
+        ("My score", "Hole, strokes, and score to par."),
+        ("Finish Round", "Writes Round History and resets."),
+        ("Good shot", "Hit logged and a stroke added."),
+        ("Came up short / Flew long", "Tunes that club’s yardage."),
+        ("Missed left / Missed right", "Updates fade/draw bias."),
+    ], styles, headers=("Tap this", "What you hear")))
 
     # ---- 10 GET THE MOST ----
     story.append(Paragraph("10. How to get everything out of it", styles["H1"]))
@@ -489,8 +499,8 @@ def build():
         ("US or female voice", "Install English (Australia) TTS. On iPhone download Lee. Tap Hear caddie voice again."),
         ("No course name on the first tee", "Wait for GPS. If the course is unmapped, tap I’m on a course. Teach missing holes with Save tee and Mark pin."),
         ("Yardage is hundreds of yards off", "Wrong hole is selected, or an old pin is still stored. Tap the correct hole, or mark pin from the green you are actually playing."),
-        ("Voice stops listening", "It pauses while it talks. If it dies, Stop then Start Voice Caddie. Chrome on Android is the reliable listener."),
-        ("iPhone will not listen continuously", "Use the Round Controls buttons. Score, strategy, and GPS still work."),
+        ("The caddie stays silent", "Turn the volume up. Tap Hear caddie voice. On iPhone, speech starts from a tap, which these buttons already are. Install an English voice in Spoken Content."),
+        ("I expected it to hear me", "It does not use the microphone. Tap the button for what you want, then listen."),
         ("Wind or elevation shows dashes", "No signal to Open-Meteo. Raw GPS yards still work; club from Laser GPS until data returns."),
     ], styles, headers=("If you see this", "Try this")))
 
@@ -510,7 +520,7 @@ def build():
     ))
     story.append(Spacer(1, 6 * mm))
     story.append(callout(
-        "<b>On the first tee, in one line.</b> Confirm the course and hole, set handicap, start voice if you want it, ask for a club, hit, add a stroke, walk, ask again, finish the hole. Do that eighteen times. That is the whole app.",
+        "<b>On the first tee, in one line.</b> Confirm the course and hole, set handicap, tap Start Caddie, tap Ask Caddie, hit, tap Add Stroke, walk, ask again, tap Next Hole. Do that eighteen times. That is the whole app.",
         styles
     ))
 

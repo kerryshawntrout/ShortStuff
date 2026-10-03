@@ -122,6 +122,14 @@ h1 {
   box-shadow: 0 4px 14px rgba(231, 76, 60, 0.35);
 }
 
+.tap-hint {
+  margin-top: -8px;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
 .hero-card,
 .history-card,
 .voice-guide-card,
@@ -170,7 +178,8 @@ h1 {
   gap: 10px;
 }
 
-#saveTeeBtn {
+#saveTeeBtn,
+#whereBtn {
   grid-column: 1 / -1;
 }
 
@@ -356,6 +365,27 @@ h1 {
 .controls-card h3,
 .profile-card h3 {
   color: var(--accent-green);
+}
+
+.controls-card h3.subhead {
+  margin-top: 16px;
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.par-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.par-btn.active {
+  background: var(--accent-gold);
+  color: #000;
+  border-color: var(--accent-gold);
 }
 
 .profile-card input {
