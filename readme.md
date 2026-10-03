@@ -11,7 +11,7 @@ A lightweight Progressive Web App that recommends clubs from GPS yardage, elevat
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
 * **Tap in, voice out:** Score, club, pin, par, and misses are buttons. The caddie speaks each reply. The microphone stays off.
 * **Australian male caddie voice:** Speaks with an `en-AU` male voice when the phone has one installed, and uses the golfer's name in conversation.
-* **Editable bag:** Add, remove, or change clubs and carry yards on the phone. Removed clubs keep their yards if you add them back. The caddie picks from the clubs still in the bag.
+* **Editable bag:** Tap **Bag** for clubs and carry yards. The round stays on the first screen. Removed clubs keep their yards if you add them back. The caddie picks from the clubs still in the bag.
 * **On-screen scorekeeping:** Tap controls work even when the microphone is unavailable.
 * **Round memory:** In-progress rounds survive a refresh; finished rounds are stored locally.
 * **Offline app shell:** Service worker caches the UI so the scorekeeper still loads without signal.

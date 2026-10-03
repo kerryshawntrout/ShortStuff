@@ -306,7 +306,7 @@ def build():
         "<b>Handicap</b> defaults to 14. Set your real number. This is not vanity — it changes strategy.",
         "Handicap 0–8: more aggressive when the shot is on. 9–18: play smart (club down, lay up, fat of the green). 19+: protect the double.",
         "Changing the handicap field makes the caddie say the new play style.",
-        "<b>Your bag</b> is the list of clubs and carry yards under Your caddie. Add, remove, or change a number there. The caddie only recommends clubs from that list. Remove takes a club out of play but keeps its yards; add the same name back (or tap Add back) to restore it. Reset bag restores Driver through Lob Wedge.",
+        "<b>Bag</b> is its own screen, opened from the Bag button. Add, remove, or change carry yards there. The caddie only recommends clubs from that list. Remove takes a club out of play but keeps its yards; add the same name back (or tap Add back) to restore it. Reset bag restores Driver through Lob Wedge. Round brings you back to yardage and score.",
     ], styles))
     story.append(callout(
         "<b>Why handicap matters.</b> A 14-handicap on a 273-yard par 4 should hear “5-wood, leave a wedge,” not “hit driver at the flag.” A 5-handicap can take more risk. Put in the number you actually play to.",
