@@ -26,12 +26,13 @@ if (typeof window !== "undefined" && !window.CaddieBag) {
 const Bag = (typeof window !== "undefined" && window.CaddieBag) ? window.CaddieBag : globalThis.CaddieBag;
 if (typeof globalThis.CaddieVoice === "undefined") {
   globalThis.CaddieVoice = {
+    isEnglishVoice() { return false; },
     isIrishVoice() { return false; },
     voiceGenderScore() { return 0; },
     scoreCaddieVoice() { return 0; },
     pickCaddieVoice() { return null; },
     speechSettings() { return { lang: "en-GB", pitch: 0.86, rate: 0.94 }; },
-    describeCaddieVoice() { return "Voice: Irish phrasing. Install Connor (English, Ireland) or a UK male voice."; }
+    describeCaddieVoice() { return "No English voice yet. Install English (Ireland) and Connor, or English (UK) and Daniel."; }
   };
 }
 const Voice = (typeof window !== "undefined" && window.CaddieVoice) ? window.CaddieVoice : globalThis.CaddieVoice;
@@ -43,7 +44,8 @@ if (typeof globalThis.GolfCourseApi === "undefined") {
     pickTee() { return null; },
     courseToModel() { return { id: null, name: "Golf course", teeName: null, tees: [], holes: [] }; },
     unwrapCourse(payload) { return payload || null; },
-    withinOnCourse() { return false; }
+    withinOnCourse() { return false; },
+    normalizeApiKey(value) { return String(value || "").trim(); }
   };
 }
 const GolfApi = (typeof window !== "undefined" && window.GolfCourseApi) ? window.GolfCourseApi : globalThis.GolfCourseApi;
@@ -64,7 +66,7 @@ const GPS_UI_MS = 800;
 const RESUME_DEBOUNCE_MS = 800;
 const MAX_COURSE_MEMORIES = 6;
 const MAX_SAVED_ROUNDS = 12;
-const APP_VERSION = "v19";
+const APP_VERSION = "v20";
 
 if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
   window.CaddieCourseMemory = {
@@ -293,7 +295,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (event.key === "Enter") onAddClub();
     });
     onElement("newClubName", "blur", onNewClubNameBlur);
-    onElement("golfApiKeyInput", "change", (event) => setGolfApiKey(event.target.value));
+    onElement("golfApiKeyInput", "input", scheduleGolfApiKeySave);
+    onElement("golfApiKeyInput", "change", () => commitTypedGolfApiKey(true));
+    onElement("golfApiKeyInput", "blur", () => commitTypedGolfApiKey(true));
+    onElement("golfApiKeyToggle", "click", toggleGolfApiKeyVisibility);
     onElement("courseSearchBtn", "click", onCourseSearch);
     onElement("courseSearchInput", "keydown", (event) => {
       if (event.key === "Enter") onCourseSearch();
@@ -765,25 +770,84 @@ async function maybeRefreshCourseContext(pos) {
   }
 }
 
-function golfApiKey() {
-  return String(loadJSON(GOLF_API_KEY, "") || "").trim();
+let golfKeySaveTimer = 0;
+
+function storedGolfApiKey() {
+  return GolfApi.normalizeApiKey(loadJSON(GOLF_API_KEY, ""));
 }
 
-function setGolfApiKey(value) {
-  const key = String(value || "").trim();
-  saveJSON(GOLF_API_KEY, key);
-  proximityBlocked = false;
-  lastCourseQueryAt = 0;
+function golfApiKey() {
+  return storedGolfApiKey();
+}
+
+function setGolfApiKeyStatus(text) {
   const status = document.getElementById("golfApiKeyStatus");
-  if (status) status.innerText = key ? "Key saved on this phone." : "No key saved.";
-  if (currentPos && key) maybeRefreshCourseContext(currentPos);
+  if (status) status.innerText = text || "";
+}
+
+function commitTypedGolfApiKey(writeBack) {
+  window.clearTimeout(golfKeySaveTimer);
+  const input = document.getElementById("golfApiKeyInput");
+  const key = input ? GolfApi.normalizeApiKey(input.value) : storedGolfApiKey();
+  if (writeBack && input && input.value !== key) input.value = key;
+  const previous = storedGolfApiKey();
+  saveJSON(GOLF_API_KEY, key);
+  if (key !== previous) {
+    proximityBlocked = false;
+    lastCourseQueryAt = 0;
+    setGolfApiKeyStatus(key ? "Key saved on this phone." : "No key saved.");
+    if (currentPos && key) maybeRefreshCourseContext(currentPos);
+  }
+  return key;
+}
+
+function scheduleGolfApiKeySave() {
+  window.clearTimeout(golfKeySaveTimer);
+  golfKeySaveTimer = window.setTimeout(() => commitTypedGolfApiKey(false), 400);
+}
+
+function toggleGolfApiKeyVisibility() {
+  const input = document.getElementById("golfApiKeyInput");
+  const btn = document.getElementById("golfApiKeyToggle");
+  if (!input || !btn) return;
+  const show = input.type === "password";
+  input.type = show ? "text" : "password";
+  btn.textContent = show ? "Hide" : "Show";
+  btn.setAttribute("aria-label", show ? "Hide GolfCourseAPI key" : "Show GolfCourseAPI key");
 }
 
 function golfApiErrorText(err) {
-  if (err?.status === 401) return "GolfCourseAPI rejected that key.";
-  if (err?.status === 403) return "That GolfCourseAPI call needs a Pro key.";
+  if (err?.status === 401) return "GolfCourseAPI rejected that key. Paste it again from your account, then tap Find.";
+  if (err?.status === 403) return "That call needs a Pro key. Name search works on the free key.";
   if (err?.status === 0) return "Add a GolfCourseAPI key first.";
-  return "Couldn't reach GolfCourseAPI.";
+  if (err?.name === "AbortError") return "GolfCourseAPI took too long. Tap Find again.";
+  return err?.apiMessage || "Couldn't reach GolfCourseAPI.";
+}
+
+function golfApiMessage(data, status) {
+  if (typeof data?.error === "string" && data.error.trim()) return data.error.trim();
+  if (data?.error && typeof data.error === "object") {
+    const text = Object.values(data.error).filter((item) => typeof item === "string").join(" ");
+    if (text) return text;
+  }
+  return `GolfCourseAPI HTTP ${status}`;
+}
+
+async function golfApiSend(url, authorization) {
+  const res = await fetchWithTimeout(url.toString(), {
+    headers: {
+      Authorization: authorization,
+      Accept: "application/json"
+    }
+  }, API_TIMEOUT_MS);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(golfApiMessage(data, res.status));
+    err.status = res.status;
+    err.apiMessage = err.message;
+    throw err;
+  }
+  return data;
 }
 
 async function golfApiGet(path, params) {
@@ -797,19 +861,12 @@ async function golfApiGet(path, params) {
   for (const [name, value] of Object.entries(params || {})) {
     if (value != null && value !== "") url.searchParams.set(name, String(value));
   }
-  const res = await fetchWithTimeout(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${key}`,
-      Accept: "application/json"
-    }
-  }, API_TIMEOUT_MS);
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const err = new Error(typeof data?.error === "string" ? data.error : `GolfCourseAPI HTTP ${res.status}`);
-    err.status = res.status;
-    throw err;
+  try {
+    return await golfApiSend(url, `Bearer ${key}`);
+  } catch (err) {
+    if (err.status !== 401) throw err;
+    return golfApiSend(url, `Key ${key}`);
   }
-  return data;
 }
 
 function showApiCourse(course, teeName, pos) {
@@ -848,6 +905,7 @@ async function lookupCourseFromApi(pos) {
       unit: "mi",
       limit: 5
     });
+    setGolfApiKeyStatus("Key accepted.");
     const nearest = (data.courses || [])[0];
     if (!nearest || !GolfApi.withinOnCourse(nearest)) {
       if (courseLock === "search") {
@@ -878,6 +936,7 @@ async function lookupCourseFromApi(pos) {
     console.warn("GolfCourseAPI", err);
     if (err.status === 403) {
       proximityBlocked = true;
+      setGolfApiKeyStatus("Key accepted. GPS lookup needs a Pro key. Search by course name.");
       if (locationMode !== "course") {
         locationMode = "unknown";
         updateLocationUI("GPS course search needs a GolfCourseAPI Pro key. Search by course name, or tap I'm on a course.");
@@ -888,6 +947,7 @@ async function lookupCourseFromApi(pos) {
     }
     if (err.status === 401) {
       locationMode = "unknown";
+      setGolfApiKeyStatus(golfApiErrorText(err));
       updateLocationUI("GolfCourseAPI rejected that key. Paste the key from your account and save it again.");
       updateHeroForMode();
       updatePinUI();
@@ -935,17 +995,22 @@ async function onCourseSearch() {
     setCourseSearchStatus("Type a course name.");
     return;
   }
-  if (!golfApiKey()) {
+  const key = commitTypedGolfApiKey(true);
+  if (!key) {
     setCourseSearchStatus("Add a GolfCourseAPI key first.");
+    setGolfApiKeyStatus("Paste a GolfCourseAPI key, then tap Find.");
     return;
   }
   setCourseSearchStatus("Searching…");
   try {
     const data = await golfApiGet("/v1/search", { search_query: query });
+    setGolfApiKeyStatus("Key accepted.");
     renderCourseResults(data.courses || []);
   } catch (err) {
     console.warn("GolfCourseAPI search", err);
-    setCourseSearchStatus(golfApiErrorText(err));
+    const message = golfApiErrorText(err);
+    setCourseSearchStatus(message);
+    if (err.status === 401 || err.status === 403 || err.status === 0) setGolfApiKeyStatus(message);
   }
 }
 
@@ -963,12 +1028,15 @@ async function loadCourseById(id, teeName) {
     lastCourseQueryAt = Date.now();
     if (currentPos) lastCourseQueryPos = { lat: currentPos.lat, lng: currentPos.lng };
     showApiCourse(course, teeName || detectedCourse?.teeName, currentPos);
+    setGolfApiKeyStatus("Key accepted.");
     setCourseSearchStatus(`${GolfApi.courseDisplayName(course)} loaded. Mark the pin for yardage.`);
     const list = document.getElementById("courseSearchResults");
     if (list) list.replaceChildren();
   } catch (err) {
     console.warn("GolfCourseAPI course", err);
-    setCourseSearchStatus(golfApiErrorText(err));
+    const message = golfApiErrorText(err);
+    setCourseSearchStatus(message);
+    if (err.status === 401 || err.status === 403) setGolfApiKeyStatus(message);
   }
 }
 
@@ -2205,21 +2273,34 @@ function previewCaddieVoice() {
   speakFeedback(`How's it going, ${golferName()}. I'll caddie for you. When you've a number, tap Ask Caddie.`);
 }
 
+function refreshCaddieVoice() {
+  const synth = window.speechSynthesis;
+  if (!synth) return null;
+  const voices = synth.getVoices() || [];
+  if (!voices.length) {
+    if (caddieVoice && !Voice.isEnglishVoice(caddieVoice)) caddieVoice = null;
+    return caddieVoice;
+  }
+  caddieVoice = pickCaddieVoice(voices);
+  if (caddieVoice && !Voice.isEnglishVoice(caddieVoice)) caddieVoice = null;
+  return caddieVoice;
+}
+
 function initSpeechVoices() {
   if (!window.speechSynthesis) {
     updateVoiceStatus();
     return;
   }
   const select = () => {
-    caddieVoice = pickCaddieVoice(window.speechSynthesis.getVoices() || []);
+    refreshCaddieVoice();
     updateVoiceStatus();
   };
   select();
-  if (typeof window.speechSynthesis.addEventListener === "function") {
-    window.speechSynthesis.addEventListener("voiceschanged", select, { once: true });
-  } else {
-    window.speechSynthesis.onvoiceschanged = select;
+  const synth = window.speechSynthesis;
+  if (typeof synth.addEventListener === "function") {
+    synth.addEventListener("voiceschanged", select);
   }
+  synth.onvoiceschanged = select;
 }
 
 function updateVoiceStatus() {
@@ -2244,21 +2325,38 @@ function pickCaddieVoice(voices) {
   return Voice.pickCaddieVoice(voices);
 }
 
-function speakFeedback(message) {
-  if (!window.speechSynthesis) return;
+let speakTimer = 0;
 
-  window.speechSynthesis.cancel();
-  if (!caddieVoice) {
-    caddieVoice = pickCaddieVoice(window.speechSynthesis.getVoices() || []);
-    updateVoiceStatus();
+function speakFeedback(message) {
+  const synth = window.speechSynthesis;
+  if (!synth) return;
+  const text = String(message || "").trim();
+  if (!text) return;
+
+  try { synth.resume(); } catch (err) { /* iPhone leaves the engine paused. */ }
+  const voice = refreshCaddieVoice();
+  updateVoiceStatus();
+  const settings = Voice.speechSettings(voice);
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = voice?.lang || settings.lang || "en-GB";
+  utterance.rate = 1;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  if (voice) utterance.voice = voice;
+
+  const start = () => {
+    try { synth.resume(); } catch (err) { /* already resumed */ }
+    synth.speak(utterance);
+  };
+
+  // cancel() in the same turn makes iPhone drop the new line.
+  if (synth.speaking || synth.pending) {
+    synth.cancel();
+    window.clearTimeout(speakTimer);
+    speakTimer = window.setTimeout(start, 80);
+  } else {
+    start();
   }
-  const settings = Voice.speechSettings(caddieVoice);
-  const utterance = new SpeechSynthesisUtterance(message);
-  utterance.lang = settings.lang;
-  utterance.rate = settings.rate;
-  utterance.pitch = settings.pitch;
-  if (caddieVoice) utterance.voice = caddieVoice;
-  window.speechSynthesis.speak(utterance);
 }
 
 window.CaddieSpeech = {

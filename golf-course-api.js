@@ -101,6 +101,15 @@
     return Number.isFinite(distance) && distance <= miles;
   }
 
+  function normalizeApiKey(value) {
+    let key = String(value || "").replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+    key = key.replace(/^authorization\s*:\s*/i, "");
+    key = key.replace(/^(bearer|key)\s+/i, "");
+    key = key.replace(/^["'“”‘’]+|["'“”‘’]+$/g, "").trim();
+    key = key.replace(/\s+/g, "");
+    return key;
+  }
+
   root.GolfCourseApi = {
     ON_COURSE_MILES,
     courseDisplayName,
@@ -108,6 +117,7 @@
     pickTee,
     courseToModel,
     unwrapCourse,
-    withinOnCourse
+    withinOnCourse,
+    normalizeApiKey
   };
 })(typeof window !== "undefined" ? window : globalThis);

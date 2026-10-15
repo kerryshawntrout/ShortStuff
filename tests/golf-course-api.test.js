@@ -76,5 +76,10 @@ assert.strictEqual(Api.withinOnCourse({ distance: 1.42 }), true);
 assert.strictEqual(Api.withinOnCourse({ distance: 2 }), true);
 assert.strictEqual(Api.withinOnCourse({ distance: 2.01 }), false);
 assert.strictEqual(Api.withinOnCourse({}), false);
+assert.strictEqual(Api.normalizeApiKey("  Bearer abc-123  "), "abc-123");
+assert.strictEqual(Api.normalizeApiKey("Authorization: Key abc-123"), "abc-123");
+assert.strictEqual(Api.normalizeApiKey("\"abc-123\""), "abc-123");
+assert.strictEqual(Api.normalizeApiKey("abc 123"), "abc123");
+assert.strictEqual(Api.normalizeApiKey(""), "");
 
 console.log("golf-course-api tests passed");
