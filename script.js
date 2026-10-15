@@ -24,6 +24,17 @@ if (typeof window !== "undefined" && !window.CaddieBag) {
 }
 
 const Bag = (typeof window !== "undefined" && window.CaddieBag) ? window.CaddieBag : globalThis.CaddieBag;
+if (typeof globalThis.CaddieVoice === "undefined") {
+  globalThis.CaddieVoice = {
+    isIrishVoice() { return false; },
+    voiceGenderScore() { return 0; },
+    scoreCaddieVoice() { return 0; },
+    pickCaddieVoice() { return null; },
+    speechSettings() { return { lang: "en-GB", pitch: 0.86, rate: 0.94 }; },
+    describeCaddieVoice() { return "Voice: Irish phrasing. Install Connor (English, Ireland) or a UK male voice."; }
+  };
+}
+const Voice = (typeof window !== "undefined" && window.CaddieVoice) ? window.CaddieVoice : globalThis.CaddieVoice;
 const DEFAULT_CLUBS = Bag.DEFAULT_CLUBS;
 const MIN_CLUBS = Bag.MIN_CLUBS;
 const MAX_CLUBS = Bag.MAX_CLUBS;
@@ -44,7 +55,7 @@ const RESUME_DEBOUNCE_MS = 800;
 const MAX_COURSE_MEMORIES = 6;
 const MAX_HOLE_HAZARDS = 6;
 const MAX_SAVED_ROUNDS = 12;
-const APP_VERSION = "v17";
+const APP_VERSION = "v18";
 
 if (typeof window !== "undefined" && !window.CaddieCourseMemory) {
   window.CaddieCourseMemory = {
@@ -325,7 +336,7 @@ async function startCaddie() {
   caddieOn = true;
   updateStartButton();
   updateStatus("Caddie ready", true);
-  speakFeedback(`G'day ${golferName()}. Tap the buttons and I'll talk you through the round.`);
+  speakFeedback(`How's it going, ${golferName()}. Tap the buttons and I'll talk you through the round.`);
   startGpsWatch();
   await requestWakeLock();
 }
@@ -594,10 +605,10 @@ async function markPinHere(announce) {
       : "Walk to your ball, then ask for distance or tap Ask Caddie.");
   if (announce) {
     speakFeedback(pinSource === "practice"
-      ? `Practice pin marked, ${golferName()}. That's only for testing off the course.`
+      ? `Practice pin marked, ${golferName()}. That's only for a test off the course.`
       : (learnedGreen
-        ? `Green saved for hole ${currentHole}, ${golferName()}. Next time I'll have it.`
-        : `Pin marked, ${golferName()}. Walk to your ball and tap Ask Caddie.`));
+        ? `Green saved for hole ${currentHole}, ${golferName()}. I'll have it the next time.`
+        : `Pin marked, ${golferName()}. Walk on to the ball and tap Ask Caddie.`));
   }
   refreshYardage();
 }
@@ -670,7 +681,7 @@ function setLocationOverride(mode, announce) {
 
   if (mode === "home") {
     applyHomeMode("You're marked as at home. Pin setup stays optional.");
-    if (announce) speakFeedback(`You're at home, ${golferName()}. I won't ask you to set a pin.`);
+    if (announce) speakFeedback(`You're at home, ${golferName()}. I won't be asking you to set a pin.`);
     return;
   }
 
@@ -678,7 +689,7 @@ function setLocationOverride(mode, announce) {
   if (currentPos) {
     maybeRefreshCourseContext(currentPos).then(() => refreshYardage());
   }
-  if (announce) speakFeedback(`No worries, ${golferName()}. Treating this as a golf course. Mark the pin if I don't have a green.`);
+  if (announce) speakFeedback(`Grand, ${golferName()}. I'll treat this as a course. Mark the pin if I've no green.`);
 }
 
 function speakLocation() {
@@ -693,7 +704,7 @@ function speakLocation() {
     speakFeedback(`${golferName()}, you're on ${course}, ${holeText}, par ${currentHolePar}.`);
     return;
   }
-  speakFeedback(`I haven't confirmed a golf course yet, ${golferName()}.`);
+  speakFeedback(`I haven't a course confirmed yet, ${golferName()}.`);
 }
 
 async function maybeRefreshCourseContext(pos) {
@@ -1063,7 +1074,7 @@ function goToHole(n, announce) {
   if (announce) {
     const label = mapped?.name || String(holeNum);
     if (CaddieCourseMemory.holeNeedsGreen(mapped)) {
-      speakFeedback(`${golferName()}, hole ${label} isn't mapped yet. Save the tee here, then mark the pin on the green. I'll keep it for next time.`);
+      speakFeedback(`${golferName()}, hole ${label} isn't mapped yet. Save the tee here, then mark the pin on the green. I'll keep it for the next round.`);
     } else {
       speakFeedback(`${golferName()}, hole ${label}, par ${currentHolePar}.`);
     }
@@ -1565,7 +1576,7 @@ function buildStrategy(ctx) {
   let planLabel = playStyleLabel(style);
 
   if (holeLen != null && rawYards > holeLen + 90) {
-    advice.push("GPS isn't at this hole yet. Walk to the tee or your ball before trusting the number.");
+    advice.push("The GPS isn't on this hole yet. Walk to the tee or the ball before you trust that number.");
     return { targetDistance: driver.distance, advice: advice.join(" "), preferLonger: false, planLabel, style };
   }
 
@@ -1574,11 +1585,11 @@ function buildStrategy(ctx) {
     if (frontGreenTrouble.length || waterShort.length) {
       targetDistance += 6;
       preferLonger = true;
-      advice.push("Trouble short of this par 3. Take enough club and use the middle of the green.");
+      advice.push("There's trouble short of this par 3. Take enough club and use the middle.");
     } else if (style === "attack" && rawYards <= 150) {
-      advice.push("Par 3 in range. You can look at the pin if it's not tucked; otherwise the fat of the green.");
+      advice.push("Par 3, and you're in range. Look at the pin if it's not tucked. Otherwise the fat of the green.");
     } else {
-      advice.push("Par 3: a 3 is a good score. Aim the fat of the green, not a sucker pin.");
+      advice.push("Par 3. A three is a good score. Aim the fat of the green, not a sucker pin.");
     }
   } else if (onThisHoleTee && par === 4) {
     const shortPar4 = holeLen != null && holeLen < (driver.distance || 250) + 30;
@@ -1586,44 +1597,44 @@ function buildStrategy(ctx) {
       targetDistance = Math.min(wood.distance, Math.max(180, (holeLen || rawYards) - 40));
       planLabel = "Club down";
       advice.push(shortPar4
-        ? `Short par 4. ${wood.name} off the tee and leave a full wedge. Driver can run through.`
-        : `Hazard in the landing zone. ${wood.name} off the tee, then a simple approach.`);
+        ? `Short par 4. ${wood.name} off the tee, and leave yourself a full wedge. The driver can run through.`
+        : `There's trouble in the landing area. ${wood.name} off the tee, then a simple approach.`);
     } else {
       targetDistance = driver.distance;
       preferLonger = false;
-      advice.push("Tee shot: find the fairway. Aim away from trouble and don't try to overpower it.");
+      advice.push("Tee shot. Find the fairway. Aim away from the trouble and don't force it.");
     }
     const left = hazards.some((h) => h.side === "left" && h.zone !== "green");
     const right = hazards.some((h) => h.side === "right" && h.zone !== "green");
-    if (left && !right) advice.push("Keep it down the right side.");
-    if (right && !left) advice.push("Keep it down the left side.");
-    if (hole?.dogleg) advice.push(`It doglegs ${hole.dogleg}. Don't cut the corner.`);
+    if (left && !right) advice.push("Keep it down the right.");
+    if (right && !left) advice.push("Keep it down the left.");
+    if (hole?.dogleg) advice.push(`It doglegs ${hole.dogleg}. Don't be cutting the corner.`);
   } else if (onThisHoleTee && par === 5) {
     targetDistance = landingTrouble.length && style !== "attack" ? wood.distance : driver.distance;
     preferLonger = false;
-    advice.push("Par 5: fairway first. Position for a wedge in rather than hunting eagle.");
+    advice.push("Par 5. Fairway first. Leave yourself a wedge in, rather than hunting the eagle.");
   } else if (par === 5 && playsLikeYards > (wood.distance || 220) + 15 && style !== "attack") {
     const layupTo = Math.max(95, Math.min(wedge.distance || 125, 115));
     targetDistance = Math.max(90, playsLikeYards - layupTo);
     preferLonger = false;
     planLabel = "Lay up";
-    advice.push(`Don't go for this green. Lay up to about ${layupTo} yards and take your wedge.`);
-    if (waterShort.length) advice.push("Water is short. Lay up well before it.");
+    advice.push(`Don't go for this green. Lay up to about ${layupTo} and take the wedge.`);
+    if (waterShort.length) advice.push("Water's short. Lay up well before it.");
   } else {
     targetDistance = playsLikeYards + extra;
     if (frontGreenTrouble.length || waterShort.length) {
       targetDistance += 6;
       preferLonger = true;
-      advice.push("Hazard short of the green. Take one extra club and miss long or center.");
+      advice.push("Trouble short of the green. Take one more club and miss long or in the middle.");
     } else if (rawYards > 140 || style !== "attack") {
-      advice.push("Aim the center of the green. Middle of the putting surface beats a hero pin.");
+      advice.push("Aim the middle of the green. The center beats a hero pin.");
     } else {
-      advice.push("In scoring range. You can be more aggressive, but miss on the fat side of the green.");
+      advice.push("You're in scoring range. You can be a bit more aggressive, but miss on the fat side.");
     }
   }
 
-  if (ctx.bias?.lateralBias > 2) advice.push("Your stock miss is a fade. Start it left of the safe line.");
-  else if (ctx.bias?.lateralBias < -2) advice.push("Your stock miss is a draw. Start it right of the safe line.");
+  if (ctx.bias?.lateralBias > 2) advice.push("Your stock miss is a fade. Start it a touch left of the safe line.");
+  else if (ctx.bias?.lateralBias < -2) advice.push("Your stock miss is a draw. Start it a touch right of the safe line.");
 
   return {
     targetDistance: Math.round(targetDistance),
@@ -1675,7 +1686,7 @@ function logShot(type) {
 
 function speakScore() {
   const relText = getRelativeScoreSpeech(completedHoles, currentHoleStrokes, currentHolePar);
-  speakFeedback(`${golferName()}, you're on hole ${currentHole} with ${currentHoleStrokes} strokes. Overall you're ${relText}.`);
+  speakFeedback(`${golferName()}, you're on hole ${currentHole} with ${currentHoleStrokes} strokes. Overall, you're ${relText}.`);
 }
 
 function logGoodShot() {
@@ -1683,7 +1694,7 @@ function logGoodShot() {
   const hadClub = Boolean(recommendedClubObj);
   logShot("hit");
   if (hadClub) {
-    speakFeedback(`Beauty, ${golferName()}. Target hit logged. Stroke ${currentHoleStrokes} counted.`);
+    speakFeedback(`Fair play, ${golferName()}. That's a good one. Stroke ${currentHoleStrokes} counted.`);
     return;
   }
   speakFeedback(`Stroke ${currentHoleStrokes} counted, ${golferName()}. Tap Ask Caddie first if you want that hit saved on the club.`);
@@ -1693,14 +1704,14 @@ function logMiss(type) {
   const hadClub = Boolean(recommendedClubObj);
   logShot(type);
   if (!hadClub) {
-    speakFeedback(`${golferName()}, tap Ask Caddie first, then tell me how the shot finished.`);
+    speakFeedback(`${golferName()}, tap Ask Caddie first, then tell me how that one finished.`);
     return;
   }
   const lines = {
-    short: "Logged short miss. Adjusting club yardages up.",
-    long: "Logged long miss. Adjusting club yardages down.",
-    left: "Logged left miss. Updating draw bias.",
-    right: "Logged right miss. Updating fade bias."
+    short: "Logged short. I'll give the clubs a couple of yards.",
+    long: "Logged long. I'll take a couple of yards off.",
+    left: "Logged left. I'll allow for the draw.",
+    right: "Logged right. I'll allow for the fade."
   };
   speakFeedback(lines[type] || "Logged.");
 }
@@ -1734,7 +1745,7 @@ function setHolePar(par, announce) {
   }
   updateScoreUI();
   updateLocationUI();
-  if (announce) speakFeedback(`Hole ${currentHole} set to Par ${par}.`);
+  if (announce) speakFeedback(`Hole ${currentHole} set to par ${par}.`);
 }
 
 function addStroke(announce) {
@@ -1772,8 +1783,8 @@ function completeHole(skip, announce) {
   const nextHole = currentHole + 1;
   const relText = getRelativeScoreSpeech(completedHoles);
   const message = skip
-    ? `Skipping hole ${currentHole}. Moving to hole ${nextHole}, ${golferName()}.`
-    : `Hole ${currentHole} logged with ${currentHoleStrokes} strokes. You're currently ${relText}. Moving to hole ${nextHole}, ${golferName()}.`;
+    ? `Skipping hole ${currentHole}. On to hole ${nextHole}, ${golferName()}.`
+    : `Hole ${currentHole} logged with ${currentHoleStrokes} strokes. You're ${relText}. On to hole ${nextHole}, ${golferName()}.`;
 
   currentHole = nextHole;
   currentHoleStrokes = 0;
@@ -1815,7 +1826,7 @@ function finishRound(announce) {
   const finalRel = diff === 0 ? "Even par" : `${Math.abs(diff)} ${diff > 0 ? "over" : "under"}`;
 
   if (announce) {
-    speakFeedback(`Nice work ${golferName()}. Round saved to history. You completed ${completedHoles.length} holes with ${totalStrokes} gross strokes, finishing ${finalRel}.`);
+    speakFeedback(`Fair play, ${golferName()}. Round saved. You completed ${completedHoles.length} holes with ${totalStrokes} gross, finishing ${finalRel}.`);
   }
 
   currentHole = 1;
@@ -2115,20 +2126,20 @@ function getBestClub(yards, options = {}) {
 
 function speakRecommendation() {
   if (locationMode === "home" && pinSource !== "practice") {
-    speakFeedback(`${golferName()}, we're not on a course, so I don't have a green to aim at. I can still keep score.`);
+    speakFeedback(`${golferName()}, we're not on a course, so I've no green to aim at. I can still keep the card.`);
     return;
   }
   if (!targetPin) {
     speakFeedback(locationMode === "course"
-      ? `${golferName()}, I don't have a green for this hole yet. Mark the pin from the green.`
-      : `${golferName()}, I haven't found a course yet. If you're playing, tap I'm on a course, then mark the pin.`);
+      ? `${golferName()}, I've no green for this hole yet. Mark the pin from the green.`
+      : `${golferName()}, I haven't a course yet. If you're playing, tap I'm on a course, then mark the pin.`);
     return;
   }
   if (!playsLikeDistYards || !recommendedClubObj) {
-    speakFeedback(`Still calculating distance, ${golferName()}. Make sure GPS is on and you've walked to your ball.`);
+    speakFeedback(`Still working out the yardage, ${golferName()}. GPS needs to be on, and you want to be at the ball.`);
     return;
   }
-  const speechText = `${golferName()}, that plays like ${playsLikeDistYards} yards. I'd take your ${recommendedClubObj.name}. ${currentStrategy}`;
+  const speechText = `${golferName()}, that's playing ${playsLikeDistYards}. I'd be taking the ${recommendedClubObj.name}. ${currentStrategy}`;
   speakFeedback(speechText);
 }
 
@@ -2155,7 +2166,7 @@ function setGolferName(raw, announce) {
   playerProfile.name = normalizeGolferName(raw);
   saveJSON("caddie_profile", playerProfile);
   updateProfileUI();
-  if (announce) speakFeedback(`Righto. I'll call you ${golferName()}.`);
+  if (announce) speakFeedback(`Grand. I'll call you ${golferName()}.`);
 }
 
 function setHandicap(value, announce) {
@@ -2165,7 +2176,7 @@ function setHandicap(value, announce) {
   updateProfileUI();
   if (currentPos && targetPin) refreshYardage();
   if (announce) {
-    speakFeedback(`Handicap set to ${playerHandicap()}, ${golferName()}. ${playStyleLabel()}.`);
+    speakFeedback(`Handicap set to ${playerHandicap()}, ${golferName()}. ${playStyleSpeech()}.`);
   }
 }
 
@@ -2177,8 +2188,14 @@ function onNameInputChange(event) {
   setGolferName(event.target.value, false);
 }
 
+function playStyleSpeech(style = playStyle()) {
+  if (style === "attack") return "We'll attack it when the shot is on.";
+  if (style === "safe") return "We'll protect the double.";
+  return "We'll play it smart.";
+}
+
 function previewCaddieVoice() {
-  speakFeedback(`G'day ${golferName()}. I'll caddie for you in an Australian voice. When you've got a number, tap Ask Caddie.`);
+  speakFeedback(`How's it going, ${golferName()}. I'll caddie for you. When you've a number, tap Ask Caddie.`);
 }
 
 function initSpeechVoices() {
@@ -2205,54 +2222,19 @@ function updateVoiceStatus() {
     el.innerText = "This browser cannot speak. On-screen controls still work.";
     return;
   }
-  if (caddieVoice) {
-    const au = isAustralianVoice(caddieVoice);
-    const male = voiceGenderScore(caddieVoice) > 0;
-    const kind = au && male ? "Australian male" : (au ? "Australian" : (male ? "male English" : "closest available"));
-    el.innerText = `Voice: ${caddieVoice.name} · ${kind}`;
-    return;
-  }
-  el.innerText = "Voice: Australian English (male when this device has one installed).";
-}
-
-function isAustralianVoice(voice) {
-  const lang = String(voice?.lang || "").toLowerCase();
-  const name = String(voice?.name || "").toLowerCase();
-  return lang.startsWith("en-au") || name.includes("australian") || name.includes("australia") || name.includes("en-au");
+  el.innerText = Voice.describeCaddieVoice(caddieVoice);
 }
 
 function voiceGenderScore(voice) {
-  const name = String(voice?.name || "").toLowerCase();
-  if (/en-au-x-au[bf]/.test(name)) return -40;
-  if (/en-au-x-au[acd]/.test(name)) return 40;
-  if (/\b(female|karen|catherine|natasha|nicole|moira|samantha|zira|hazel|susan|fiona|tessa|serena|martha|heather|allison|ava|siri|victoria|veena|woman)\b/.test(name)) {
-    return -35;
-  }
-  if (/\b(male|lee|james|russell|gordon|william|daniel|david|mark|thomas|oliver|jack|ken|nathan|steve|alex|tom|fred|bruce|george)\b/.test(name)) {
-    return 35;
-  }
-  return 0;
+  return Voice.voiceGenderScore(voice);
 }
 
 function scoreCaddieVoice(voice) {
-  let score = 0;
-  const lang = String(voice?.lang || "").toLowerCase();
-  const name = String(voice?.name || "").toLowerCase();
-  if (isAustralianVoice(voice)) score += 60;
-  else if (lang.startsWith("en-gb") || name.includes("uk english") || name.includes("british")) score += 18;
-  else if (lang.startsWith("en")) score += 8;
-  score += voiceGenderScore(voice);
-  if (voice?.localService) score += 4;
-  if (name.includes("natural") || name.includes("enhanced") || name.includes("premium")) score += 6;
-  return score;
+  return Voice.scoreCaddieVoice(voice);
 }
 
 function pickCaddieVoice(voices) {
-  if (!Array.isArray(voices) || voices.length === 0) return null;
-  const ranked = voices
-    .map((voice) => ({ voice, score: scoreCaddieVoice(voice) }))
-    .sort((a, b) => b.score - a.score);
-  return ranked[0].voice;
+  return Voice.pickCaddieVoice(voices);
 }
 
 function speakFeedback(message) {
@@ -2263,10 +2245,11 @@ function speakFeedback(message) {
     caddieVoice = pickCaddieVoice(window.speechSynthesis.getVoices() || []);
     updateVoiceStatus();
   }
+  const settings = Voice.speechSettings(caddieVoice);
   const utterance = new SpeechSynthesisUtterance(message);
-  utterance.lang = "en-AU";
-  utterance.rate = 0.98;
-  utterance.pitch = voiceGenderScore(caddieVoice) < 0 ? 0.78 : 0.9;
+  utterance.lang = settings.lang;
+  utterance.rate = settings.rate;
+  utterance.pitch = settings.pitch;
   if (caddieVoice) utterance.voice = caddieVoice;
   window.speechSynthesis.speak(utterance);
 }

@@ -10,7 +10,7 @@ A lightweight Progressive Web App that recommends clubs from GPS yardage, elevat
 * **Mark-the-pin override:** If a course isn't mapped, or the pin is tucked, stand on the green and mark it.
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
 * **Tap in, voice out:** Score, club, pin, par, and misses are buttons. The caddie speaks each reply. The microphone stays off.
-* **Australian male caddie voice:** Speaks with an `en-AU` male voice when the phone has one installed, and uses the golfer's name in conversation.
+* **Irish male caddie voice:** Speaks with an Irish male voice when the phone has one (Connor on English (Ireland)). Otherwise it uses a male voice, preferring UK English, and the lines are written in Irish English. A woman's voice is not chosen while any male voice is installed. The caddie uses the golfer's name.
 * **Editable bag:** Tap **Bag** for clubs and carry yards. The round stays on the first screen. Removed clubs keep their yards if you add them back. The caddie picks from the clubs still in the bag.
 * **On-screen scorekeeping:** Tap controls work even when the microphone is unavailable.
 * **Round memory:** In-progress rounds survive a refresh; finished rounds are stored locally.
@@ -32,7 +32,7 @@ A lightweight Progressive Web App that recommends clubs from GPS yardage, elevat
 4. Walk to your ball. The GPS and plays-like numbers update automatically.
 5. Tap **Ask Caddie** for the club and plan. Tap **Add Stroke**, then **Next Hole**.
 
-For the Australian male voice, install **English (Australia)** in the phone's text-to-speech settings. On iPhone, Lee is the usual male Australian voice. The caddie uses the name in the Golfer field (default **Kerry**). Change that field and the caddie says the new name.
+For the Irish male voice, install **English (Ireland)** and choose **Connor** if the phone lists him. iPhone has no male Irish voice, so download **Daniel** (English, UK, male) and skip Moira. The wording stays Irish either way. The caddie uses the name in the Golfer field (default **Kerry**). Change that field and the caddie says the new name.
 
 ## User guide
 
@@ -44,6 +44,7 @@ A printable guide (what the app does, a full round workflow, the tap controls, a
 virtual-golf-caddie/
 ├── index.html        # App layout
 ├── styles.css        # High-contrast outdoor UI
+├── caddie-voice.js   # Male voice picker, Irish English preferred
 ├── script.js         # GPS, APIs, spoken replies, scoring
 ├── course-memory.js  # Holes taught on-round, stored on the phone
 ├── club-bag.js       # Add/remove/edit clubs and carry yards

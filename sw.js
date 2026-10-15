@@ -1,10 +1,11 @@
-const CACHE_NAME = "caddie-v17";
+const CACHE_NAME = "caddie-v18";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
   "./script.js",
   "./course-memory.js",
   "./club-bag.js",
+  "./caddie-voice.js",
   "./styles.css",
   "./manifest.json",
   "./aii.png"

@@ -254,7 +254,7 @@ def build():
         "<b>Gives a plays-like number.</b> Raw GPS yards are adjusted for elevation, wind, and your recent distance misses.",
         "<b>Recommends a club</b> from your bag, then a strategy for that shot.",
         "<b>Manages the hole like a caddie.</b> Handicap, par, and mapped bunkers or water change the advice: club down on short par 4s, lay up on long par 5s, extra club over trouble, miss to the fat of the green.",
-        "<b>Talks like a caddie.</b> Australian male voice when the phone has one, and it uses your name (default Kerry).",
+        "<b>Talks like a caddie.</b> Irish male voice when the phone has one, otherwise a male voice with Irish phrasing. It uses your name (default Kerry).",
         "<b>Keeps score</b> hole by hole, including undo, skip, and finish round. Rounds survive a refresh and finished cards sit in Round History.",
         "<b>Learns your miss.</b> Tap Came up short, Flew long, Missed left, or Missed right and it nudges yardages and aim.",
     ], styles))
@@ -282,17 +282,18 @@ def build():
         "Add to Home Screen (Chrome menu → Add to Home screen / Install app) so it opens full screen like a native app.",
         "After an update, force-close and reopen, or pull to refresh, so you are not stuck on an old cached copy.",
     ], styles))
-    story.append(Paragraph("Australian male voice", styles["H2"]))
+    story.append(Paragraph("Irish male voice", styles["H2"]))
     story.append(Paragraph(
-        "The caddie asks the phone for an English (Australia) male voice. If the phone only "
-        "has a US or UK voice, you will still hear Australian English phrasing, but the accent "
-        "will be whatever is installed.",
+        "The caddie asks the phone for a male voice and prefers Irish English. The lines are "
+        "written the way an Irish caddie would say them: club, the playing yardage, and where "
+        "to aim. If the phone has no Irish male voice, it still uses a man — a UK male voice "
+        "is the next choice — and it will not pick a woman's voice while any male voice is installed.",
         styles["Body"]
     ))
     story.append(bullets([
-        "<b>Android:</b> Settings → System → Languages → Text-to-speech. Install <b>English (Australia)</b> and pick a male voice if the engine offers one.",
-        "<b>iPhone:</b> Settings → Accessibility → Spoken Content → Voices → English. Download <b>Lee</b> (male, Australia). Karen is Australian but female.",
-        "Back in the app, tap <b>Hear caddie voice</b>. You should hear “G'day Kerry…” (or your name).",
+        "<b>Android or a Windows browser:</b> Settings → Text-to-speech. Install <b>English (Ireland)</b> and pick <b>Connor</b> if he is listed. Skip Emily.",
+        "<b>iPhone:</b> There is no male Irish system voice. Settings → Accessibility → Spoken Content → Voices → English (UK). Download <b>Daniel</b> (male). Do not use Moira — she is Irish, and she is a woman.",
+        "Back in the app, tap <b>Hear caddie voice</b>. You should hear “How's it going, Kerry…” (or your name), from a male voice.",
     ], styles))
     story.extend(screenshot_block(
         ASSETS / "voice_crop.jpg",
@@ -454,11 +455,11 @@ def build():
     # ---- 9 VOICE ----
     story.append(Paragraph("9. Tap reference", styles["H1"]))
     story.append(Paragraph(
-        "You do not talk to the app. Tap the button, then listen. The caddie uses an Australian voice when the phone has one. Tap <b>Stop Caddie</b> in the car if you want the screen to sleep and the current sentence to stop. The buttons still speak if you tap them.",
+        "You do not talk to the app. Tap the button, then listen. The caddie uses an Irish male voice when the phone has one, and Irish phrasing in a male voice otherwise. Tap <b>Stop Caddie</b> in the car if you want the screen to sleep and the current sentence to stop. The buttons still speak if you tap them.",
         styles["Body"]
     ))
     story.append(command_table([
-        ("Ask Caddie", "Plays-like number, club, and strategy."),
+        ("Ask Caddie", "Playing yardage, the club, and where to aim."),
         ("Mark pin / Override pin", "Saves GPS as the target. On a missing green, this is remembered for next round."),
         ("Save tee here", "Saves this tee for the current hole on this phone."),
         ("Hole number on the strip", "Jumps to that hole and its green."),
@@ -496,7 +497,7 @@ def build():
     story.append(Paragraph("11. If something looks wrong", styles["H1"]))
     story.append(command_table([
         ("Still asking to mark a pin at home", "Force-refresh or reopen the Home Screen app so you are not on an old version. Confirm Location is on. Tap I’m at home if you live next to a course."),
-        ("US or female voice", "Install English (Australia) TTS. On iPhone download Lee. Tap Hear caddie voice again."),
+        ("Woman's voice, or a US accent", "Install English (Ireland) and choose Connor. On iPhone download Daniel (UK male), not Moira. Tap Hear caddie voice again."),
         ("No course name on the first tee", "Wait for GPS. If the course is unmapped, tap I’m on a course. Teach missing holes with Save tee and Mark pin."),
         ("Yardage is hundreds of yards off", "Wrong hole is selected, or an old pin is still stored. Tap the correct hole, or mark pin from the green you are actually playing."),
         ("The caddie stays silent", "Turn the volume up. Tap Hear caddie voice. On iPhone, speech starts from a tap, which these buttons already are. Install an English voice in Spoken Content."),
