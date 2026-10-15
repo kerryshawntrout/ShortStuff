@@ -472,6 +472,24 @@ h1 {
   border-color: var(--accent-green);
 }
 
+.key-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.key-row input {
+  margin-bottom: 0;
+}
+
+.key-row .score-btn {
+  width: auto;
+  min-height: 48px;
+  padding: 12px 14px;
+}
+
 .bag-list {
   display: flex;
   flex-direction: column;

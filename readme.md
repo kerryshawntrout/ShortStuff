@@ -10,7 +10,7 @@ A lightweight Progressive Web App that recommends clubs from GPS yardage, elevat
 * **Mark-the-pin override:** If a course isn't mapped, or the pin is tucked, stand on the green and mark it.
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
 * **Tap in, voice out:** Score, club, pin, par, and misses are buttons. The caddie speaks each reply. The microphone stays off.
-* **Irish male caddie voice:** Speaks with an Irish male voice when the phone has one (Connor on English (Ireland)). Otherwise it uses a male voice, preferring UK English, and the lines are written in Irish English. A woman's voice is not chosen while any male voice is installed. The caddie uses the golfer's name.
+* **Irish male caddie voice:** Speaks with an Irish male voice when the phone has one (Connor on English (Ireland)). Otherwise it uses an English male voice, preferring UK English, and the lines are written in Irish English. Other languages on the phone, such as Assamese, are ignored. A woman's voice is not chosen while any male English voice is installed. The caddie uses the golfer's name.
 * **Editable bag:** Tap **Bag** for clubs and carry yards. The round stays on the first screen. Removed clubs keep their yards if you add them back. The caddie picks from the clubs still in the bag.
 * **On-screen scorekeeping:** Tap controls work even when the microphone is unavailable.
 * **Round memory:** In-progress rounds survive a refresh; finished rounds are stored locally.
@@ -26,7 +26,7 @@ A lightweight Progressive Web App that recommends clubs from GPS yardage, elevat
 
 **If the course is not in GolfCourseAPI:** Tap **I'm on a course**, then teach tees and greens the same way.
 
-1. Open the app, allow location, and paste a GolfCourseAPI key. The microphone is not used. The key stays on the phone.
+1. Open the app, allow location, and paste a GolfCourseAPI key under Your caddie. Tap Find to use it. You do not have to leave the key box first. The microphone is not used. The key stays on the phone.
 2. Confirm the location card shows the course (or tap **I'm on a course**).
 3. Tap **Start Caddie** if you want the screen to stay awake. You should hear a greeting.
 4. Walk to your ball. The GPS and plays-like numbers update automatically.

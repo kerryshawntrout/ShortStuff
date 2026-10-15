@@ -22,7 +22,7 @@
     <header>
       <div class="header-title">
         <h1>AI Caddie & Scorekeeper</h1>
-        <span id="appVersion" class="app-version" aria-label="App version v19">v19</span>
+        <span id="appVersion" class="app-version" aria-label="App version v20">v20</span>
       </div>
       <button id="screenToggleBtn" class="screen-toggle" type="button" aria-pressed="false" aria-label="Open your bag">Bag</button>
       <div id="status" class="status-badge">Standby</div>
@@ -117,8 +117,11 @@
       <p id="voiceStatus" class="voice-status">Looking for an Irish male voice…</p>
       <button id="previewVoiceBtn" class="score-btn" type="button">Hear caddie voice</button>
       <label class="metric-label" for="golfApiKeyInput">GolfCourseAPI key</label>
-      <input id="golfApiKeyInput" type="password" maxlength="120" spellcheck="false" autocomplete="off" aria-label="GolfCourseAPI key">
-      <p id="golfApiKeyStatus" class="voice-status">Stored on this phone. GPS lookup needs a Pro key. Name search works on the free key. Get one at golfcourseapi.com.</p>
+      <div class="key-row">
+        <input id="golfApiKeyInput" type="password" name="golfcourse-api-key" maxlength="256" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="GolfCourseAPI key">
+        <button id="golfApiKeyToggle" class="score-btn" type="button">Show</button>
+      </div>
+      <p id="golfApiKeyStatus" class="voice-status">Paste the key, then tap Find. You do not have to leave this box first. It stays on this phone. GPS lookup needs a Pro key. Name search works on the free key.</p>
     </section>
 
     <section class="metrics-grid">

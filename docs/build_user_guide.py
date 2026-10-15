@@ -336,7 +336,7 @@ def build():
     ))
     story.append(Paragraph("On a course", styles["H2"]))
     story.append(Paragraph(
-        "Paste a GolfCourseAPI key under Your caddie. It stays on the phone. A Pro key finds the nearest "
+        "Paste a GolfCourseAPI key under Your caddie, then tap Find. You do not have to leave the box first. It stays on the phone. A Pro key finds the nearest "
         "course within 2 miles. A free key can search by course name with <b>Find</b>. The card shows the "
         "course, the tee, and a hole strip with par and scorecard yardage. Walk to your ball after the pin "
         "is marked; the plays-like number and club update. Tap a hole number if you are on a different hole. "
@@ -497,9 +497,10 @@ def build():
     story.append(command_table([
         ("Still asking to mark a pin at home", "Force-refresh or reopen the Home Screen app so you are not on an old version. Confirm Location is on. Tap I’m at home if you live next to a course."),
         ("Woman's voice, or a US accent", "Install English (Ireland) and choose Connor. On iPhone download Daniel (UK male), not Moira. Tap Hear caddie voice again."),
-        ("No course name on the first tee", "Save a GolfCourseAPI key. Pro keys find a course within 2 miles. Otherwise tap Find and search the name. If it is missing, tap I’m on a course and mark the pin."),
+        ("Voice says Assamese or another language", "Reopen the app so this version loads. The caddie only uses an English voice. Install English (UK) Daniel, or English (Ireland) Connor."),
+        ("No course name on the first tee", "Paste a GolfCourseAPI key and tap Find. You do not have to leave the key box first. Pro keys find a course within 2 miles. If the name is missing, tap I’m on a course and mark the pin."),
         ("Yardage is hundreds of yards off", "Wrong hole is selected, or an old pin is still stored. Tap the correct hole, or mark pin from the green you are actually playing."),
-        ("The caddie stays silent", "Turn the volume up. Tap Hear caddie voice. On iPhone, speech starts from a tap, which these buttons already are. Install an English voice in Spoken Content."),
+        ("The caddie stays silent", "Turn the volume up. Tap Hear caddie voice again. Each tap wakes the phone's speech engine. Install an English voice in Spoken Content."),
         ("I expected it to hear me", "It does not use the microphone. Tap the button for what you want, then listen."),
         ("Wind or elevation shows dashes", "No signal to Open-Meteo. Raw GPS yards still work; club from Laser GPS until data returns."),
     ], styles, headers=("If you see this", "Try this")))
