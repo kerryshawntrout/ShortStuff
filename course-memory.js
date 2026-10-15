@@ -1,4 +1,4 @@
-// Local course memory: holes Kerry teaches on-round, plus OSM nines that share 1–9.
+// Local course memory: pins and tees taught on-round, merged with the scorecard.
 (function (root) {
   const GENERIC_NAMES = new Set([
     "unmapped course",
