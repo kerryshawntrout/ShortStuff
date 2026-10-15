@@ -4,8 +4,8 @@ A lightweight Progressive Web App that recommends clubs from GPS yardage, elevat
 
 ## Features
 
-* **Course-aware GPS:** Uses OpenStreetMap to tell home from a golf course. At home it keeps score and does not ask you to set a pin.
-* **Mapped greens:** On a tagged course it reads holes/greens and aims at the current green automatically. If two nines share hole numbers (Norvelt and Luke’s Links), it keeps the set that matches the hole names under your GPS.
+* **Course-aware GPS:** Uses GolfCourseAPI to find a course within 2 miles, or a course you search by name. At home it keeps score and does not ask you to set a pin.
+* **Scorecard:** Loads par and yardage for each hole. GolfCourseAPI does not publish green coordinates, so the first time on a hole you mark the pin. The phone keeps that pin for the next round.
 * **Teach missing holes:** If a hole isn't mapped, save the tee and mark the pin on the green. The phone keeps that for the next round.
 * **Mark-the-pin override:** If a course isn't mapped, or the pin is tucked, stand on the green and mark it.
 * **Elevation and wind adjustments:** Uses the Open-Meteo elevation and forecast APIs to compute plays-like yardage.
@@ -20,13 +20,13 @@ A lightweight Progressive Web App that recommends clubs from GPS yardage, elevat
 
 **At home:** Allow location. The app should say you are off-course. Keep score or review history; pin setup stays optional.
 
-**On a mapped course:** Allow location. The course name and hole strip appear, and yardage aims at that hole's green. Walk to your ball and ask for a club.
+**On a course:** Allow location, and save a GolfCourseAPI key in the app. Within 2 miles, a Pro key loads the nearest course. A free key can search by course name. The hole strip shows par and scorecard yardage. On the green, tap **Mark Pin Here**. Walk to your ball and ask for a club.
 
-**On an unmapped hole:** Tap the hole number (dashed chips are missing). Stand on the tee and tap **Save tee**. On the green tap **Mark Pin Here**. Next round that hole is already in the app.
+**On a hole with no saved pin:** Dashed chips still need a green. Stand on the tee and tap **Save tee**. On the green tap **Mark Pin Here**. Next round that hole is already in the app.
 
-**On an unmapped course:** Tap **I'm on a course**, then teach tees and greens the same way.
+**If the course is not in GolfCourseAPI:** Tap **I'm on a course**, then teach tees and greens the same way.
 
-1. Open the app and allow location. The microphone is not used.
+1. Open the app, allow location, and paste a GolfCourseAPI key. The microphone is not used. The key stays on the phone.
 2. Confirm the location card shows the course (or tap **I'm on a course**).
 3. Tap **Start Caddie** if you want the screen to stay awake. You should hear a greeting.
 4. Walk to your ball. The GPS and plays-like numbers update automatically.
@@ -45,6 +45,7 @@ virtual-golf-caddie/
 ├── index.html        # App layout
 ├── styles.css        # High-contrast outdoor UI
 ├── caddie-voice.js   # Male voice picker, Irish English preferred
+├── golf-course-api.js # GolfCourseAPI scorecard mapping
 ├── script.js         # GPS, APIs, spoken replies, scoring
 ├── course-memory.js  # Holes taught on-round, stored on the phone
 ├── club-bag.js       # Add/remove/edit clubs and carry yards

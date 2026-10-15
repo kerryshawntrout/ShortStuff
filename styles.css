@@ -200,6 +200,45 @@ h1 {
   margin-bottom: 12px;
 }
 
+.course-search {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.course-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.course-search-row input,
+.tee-select select {
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: #162025;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tee-select {
+  margin: 0 0 12px;
+}
+
+.course-results {
+  display: grid;
+  gap: 8px;
+}
+
+.course-results .score-btn {
+  text-align: left;
+}
+
 .location-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

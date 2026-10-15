@@ -1,4 +1,4 @@
-const CACHE_NAME = "caddie-v18";
+const CACHE_NAME = "caddie-v19";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -6,6 +6,7 @@ const ASSETS_TO_CACHE = [
   "./course-memory.js",
   "./club-bag.js",
   "./caddie-voice.js",
+  "./golf-course-api.js",
   "./styles.css",
   "./manifest.json",
   "./aii.png"
@@ -42,7 +43,7 @@ self.addEventListener("fetch", (event) => {
   if (
     url.includes("api.open-elevation.com") ||
     url.includes("api.open-meteo.com") ||
-    url.includes("overpass")
+    url.includes("api.golfcourseapi.com")
   ) {
     return;
   }

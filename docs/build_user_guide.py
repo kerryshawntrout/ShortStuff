@@ -250,10 +250,10 @@ def build():
     story.append(Paragraph("What it does well", styles["H2"]))
     story.append(bullets([
         "<b>Finds you.</b> GPS decides whether you are off-course or on a mapped golf course.",
-        "<b>Aims at the green.</b> On a mapped course it reads holes and greens from OpenStreetMap and targets the current green automatically.",
+        "<b>Loads the scorecard.</b> GolfCourseAPI supplies the course name, par, and yardage. Mark the pin once; the phone aims there next round.",
         "<b>Gives a plays-like number.</b> Raw GPS yards are adjusted for elevation, wind, and your recent distance misses.",
         "<b>Recommends a club</b> from your bag, then a strategy for that shot.",
-        "<b>Manages the hole like a caddie.</b> Handicap, par, and mapped bunkers or water change the advice: club down on short par 4s, lay up on long par 5s, extra club over trouble, miss to the fat of the green.",
+        "<b>Manages the hole like a caddie.</b> Handicap, par, and scorecard length change the advice: club down on short par 4s, lay up on long par 5s, extra club when the number is awkward, miss to the fat of the green.",
         "<b>Talks like a caddie.</b> Irish male voice when the phone has one, otherwise a male voice with Irish phrasing. It uses your name (default Kerry).",
         "<b>Keeps score</b> hole by hole, including undo, skip, and finish round. Rounds survive a refresh and finished cards sit in Round History.",
         "<b>Learns your miss.</b> Tap Came up short, Flew long, Missed left, or Missed right and it nudges yardages and aim.",
@@ -261,8 +261,8 @@ def build():
     story.append(Paragraph("What it is not", styles["H2"]))
     story.append(Paragraph(
         "It is not a laser rangefinder, a full course CAD package, or a Tour caddie with "
-        "every bunker book. Greens are mapped as the middle of the putting surface unless "
-        "you override the pin. Hazards only appear when OpenStreetMap has them. Club "
+        "every bunker book. Yardage aims at the pin you mark on the green. "
+        "GolfCourseAPI does not include bunkers, water, or green coordinates. Club "
         "distances start as a generic bag until you train them. Use it as a smart yardage "
         "and strategy partner, then trust your eyes on anything it cannot see.",
         styles["Body"]
@@ -322,7 +322,7 @@ def build():
     ))
     story.append(Paragraph("At home / off course", styles["H2"]))
     story.append(Paragraph(
-        "If OpenStreetMap does not see a golf course around you, the app stays in scorekeeper mode. "
+        "If GolfCourseAPI has no course within 2 miles, the app stays in scorekeeper mode. "
         "The big number stays blank, Laser GPS says Off course, and the pin button is "
         "<b>Drop practice pin</b> — optional, for backyard testing only. You can still add strokes, "
         "preview the voice, and review history. It will not demand a pin.",
@@ -334,28 +334,28 @@ def build():
         styles,
         72,
     ))
-    story.append(Paragraph("On a mapped course", styles["H2"]))
+    story.append(Paragraph("On a course", styles["H2"]))
     story.append(Paragraph(
-        "When GPS is on a tagged golf course, the card shows the course name, a hole strip (1–18 if mapped), "
-        "and the app aims at that hole’s green. Walk to your ball; the plays-like number and club update. "
-        "Tap a hole number if it guessed the wrong one. "
-        "If two nines share 1–9, as at Norvelt and Luke’s Links, it uses the hole names to keep the nine you are standing on.",
+        "Paste a GolfCourseAPI key under Your caddie. It stays on the phone. A Pro key finds the nearest "
+        "course within 2 miles. A free key can search by course name with <b>Find</b>. The card shows the "
+        "course, the tee, and a hole strip with par and scorecard yardage. Walk to your ball after the pin "
+        "is marked; the plays-like number and club update. Tap a hole number if you are on a different hole. "
+        "If several tees are listed, pick the one you are playing.",
         styles["Body"]
     ))
-    story.append(Paragraph("On an unmapped course", styles["H2"]))
+    story.append(Paragraph("When the course is missing", styles["H2"]))
     story.append(Paragraph(
-        "Some courses are not in OpenStreetMap hole-by-hole. Tap <b>I’m on a course</b>. "
+        "If the search finds nothing, tap <b>I’m on a course</b>. "
         "Then stand on the green and tap <b>Mark Pin Here</b>. Walk back to the ball "
         "for yardage. Repeat on each green. If the app thinks you are on a course when you are in the "
         "driveway, tap <b>I’m at home</b>.",
         styles["Body"]
     ))
-    story.append(Paragraph("Teaching a missing hole", styles["H2"]))
+    story.append(Paragraph("Teaching a green", styles["H2"]))
     story.append(Paragraph(
-        "Totteridge and other local tracks may be missing a few holes on the public map. Dashed hole "
-        "numbers are the gaps. On that tee, tap <b>Save tee here</b>. On the green, "
-        "<b>Mark Pin Here</b>. The phone keeps those points. Next round the caddie aims from the tee "
-        "without waiting on OpenStreetMap. This stays on the device; it is not uploaded.",
+        "GolfCourseAPI publishes the scorecard, not the green. Dashed hole numbers still need a pin. "
+        "On the tee, tap <b>Save tee here</b>. On the green, <b>Mark Pin Here</b>. The phone keeps those "
+        "points. Next round the caddie aims at the saved pin. This stays on the device; it is not uploaded.",
         styles["Body"]
     ))
 
@@ -404,7 +404,7 @@ def build():
     story.append(Paragraph("6. Course strategy, used properly", styles["H1"]))
     story.append(Paragraph(
         "The caddie is trying to save doubles, not paint flags. It uses your handicap, the hole’s par, "
-        "whether you are on the tee, remaining yards, and any bunkers or water mapped near that hole.",
+        "whether you are on the tee, remaining yards, and the scorecard length of the hole.",
         styles["Body"]
     ))
     story.append(Paragraph("How it thinks", styles["H2"]))
@@ -417,9 +417,8 @@ def build():
         "<b>Your miss:</b> a stored fade starts you left of the safe line; a draw starts you right.",
     ], styles))
     story.append(Paragraph(
-        "Mapped hazards come from OpenStreetMap (bunkers, water hazards, ponds). If a hole is not mapped, "
-        "you still get par- and handicap-based advice, but not “water is short.” If you can see trouble the "
-        "map missed, play the trouble you can see.",
+        "GolfCourseAPI does not send bunkers or water, so the spoken plan will not name a hazard. "
+        "You still get par, scorecard length, and handicap advice. If you can see trouble, play the trouble you can see.",
         styles["Body"]
     ))
 
@@ -498,7 +497,7 @@ def build():
     story.append(command_table([
         ("Still asking to mark a pin at home", "Force-refresh or reopen the Home Screen app so you are not on an old version. Confirm Location is on. Tap I’m at home if you live next to a course."),
         ("Woman's voice, or a US accent", "Install English (Ireland) and choose Connor. On iPhone download Daniel (UK male), not Moira. Tap Hear caddie voice again."),
-        ("No course name on the first tee", "Wait for GPS. If the course is unmapped, tap I’m on a course. Teach missing holes with Save tee and Mark pin."),
+        ("No course name on the first tee", "Save a GolfCourseAPI key. Pro keys find a course within 2 miles. Otherwise tap Find and search the name. If it is missing, tap I’m on a course and mark the pin."),
         ("Yardage is hundreds of yards off", "Wrong hole is selected, or an old pin is still stored. Tap the correct hole, or mark pin from the green you are actually playing."),
         ("The caddie stays silent", "Turn the volume up. Tap Hear caddie voice. On iPhone, speech starts from a tap, which these buttons already are. Install an English voice in Spoken Content."),
         ("I expected it to hear me", "It does not use the microphone. Tap the button for what you want, then listen."),
@@ -508,15 +507,15 @@ def build():
     # ---- 12 PRIVACY / COST ----
     story.append(Paragraph("12. Data, cost, and honesty", styles["H1"]))
     story.append(Paragraph(
-        "There is no subscription and no API key in the app. Location, voice, and score live on the phone. "
-        "Course maps come from public OpenStreetMap Overpass servers. Wind and elevation come from Open-Meteo "
-        "(free for personal use). The only cost is ordinary mobile data if you are not on Wi-Fi.",
+        "The caddie itself has no subscription. Location, voice, score, and saved pins live on the phone. "
+        "Course names and scorecards come from GolfCourseAPI, using the key you paste in. That key stays on "
+        "the phone and is sent only to api.golfcourseapi.com. Wind and elevation come from Open-Meteo. "
+        "GPS course search is a GolfCourseAPI Pro feature. Name search works on their free key.",
         styles["Body"]
     ))
     story.append(Paragraph(
-        "OpenStreetMap is volunteer cartography. A municipal course may have perfect greens; a private track "
-        "may only have an outline. Teach the gaps on the round: Save tee, then Mark pin. Those points stay on "
-        "the phone for next time. The caddie will still keep score either way.",
+        "The scorecard does not include green coordinates. Teach each green on the round: Save tee, then Mark pin. "
+        "Those points stay on the phone for next time. The caddie will still keep score either way.",
         styles["Body"]
     ))
     story.append(Spacer(1, 6 * mm))
